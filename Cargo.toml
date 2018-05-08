@@ -1,0 +1,6 @@
+[package]
+name = "rust_number"
+version = "0.1.0"
+authors = ["Daniel Snell <dsnell2009@gmail.com>"]
+
+[dependencies]
