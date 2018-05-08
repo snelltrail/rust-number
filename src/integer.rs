@@ -13,6 +13,14 @@ impl Int {
     fn new_from_i32(num: i32) -> Int {
             Int { is_negative: num < 0, digits: vec![abs(num)] }
     }
+
+    fn get_digits(&self) -> Vec<u32> {
+        self.digits.clone()
+    }
+
+    fn is_negative(&self) -> bool {
+        self.is_negative
+    }
 }
 
 /// Returns the absolute value of the given number.
@@ -50,5 +58,12 @@ mod tests {
         assert_eq!(abs(-2), 2);
         assert_eq!(abs(0), 0);
         assert_eq!(abs(i32::min_value()), i32::max_value() as u32 + 1);
+    }
+
+    #[test]
+    fn int_fields_tests() {
+        assert_eq!(Int { is_negative: true, digits: vec![1,2] }.is_negative(), true);
+        assert_eq!(Int { is_negative: false, digits: vec![1,3] }.is_negative(), false);
+        assert_eq!(Int { is_negative: true, digits: vec![1,2] }.get_digits(), vec![1,2]);
     }
 }
