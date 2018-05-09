@@ -7,11 +7,17 @@ pub struct Int {
 
 impl Int {
     pub fn new(is_negative: bool, digits: Vec<u32>) -> Int {
-        Int { is_negative, digits }
+        Int {
+            is_negative,
+            digits,
+        }
     }
 
     pub fn new_from_i32(num: i32) -> Int {
-            Int { is_negative: num < 0, digits: vec![abs(num)] }
+        Int {
+            is_negative: num < 0,
+            digits: vec![abs(num)],
+        }
     }
 }
 
@@ -42,7 +48,13 @@ mod tests {
     use super::abs;
     #[test]
     fn int_works() {
-        assert_eq!(Int::new(true,vec![1,2]), Int { is_negative: true, digits: vec![1,2] } );
+        assert_eq!(
+            Int::new(true, vec![1, 2]),
+            Int {
+                is_negative: true,
+                digits: vec![1, 2],
+            }
+        );
     }
 
     #[test]
