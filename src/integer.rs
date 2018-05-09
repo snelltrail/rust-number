@@ -21,6 +21,17 @@ impl Int {
     }
 }
 
+pub fn add_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
+    assert!(carry == 1 || carry == 0);
+    let big_x = x as u64;
+    let big_y = y as u64;
+    let big_carry = carry as u64;
+    let result = big_x + big_y + big_carry;
+    let sum = result as u32;
+    let result_carry = (result >> 32) as u32;
+    (sum, result_carry)
+}
+
 /// Returns the absolute value of the given number.
 ///
 /// # Examples
@@ -44,8 +55,7 @@ pub fn abs(x: i32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use super::Int;
-    use super::abs;
+    use super::*;
     #[test]
     fn int_works() {
         assert_eq!(
@@ -62,5 +72,16 @@ mod tests {
         assert_eq!(abs(-2), 2);
         assert_eq!(abs(0), 0);
         assert_eq!(abs(i32::min_value()), i32::max_value() as u32 + 1);
+    }
+
+    #[test]
+    fn add_with_carry_test() {
+        assert_eq!(add_with_carry(0, 0, 0), (0, 0));
+        assert_eq!(add_with_carry(1, 1, 1), (3, 0));
+        assert_eq!(add_with_carry(u32::max_value()-1, 1, 0), (u32::max_value(), 0));
+        assert_eq!(add_with_carry(u32::max_value()-1, 0, 1), (u32::max_value(), 0));
+        assert_eq!(add_with_carry(u32::max_value(), 1, 0), (0, 1));
+        assert_eq!(add_with_carry(u32::max_value(), 0, 1), (0, 1));
+        assert_eq!(add_with_carry(u32::max_value(), 11, 0), (10, 1));
     }
 }
