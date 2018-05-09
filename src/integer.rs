@@ -1,16 +1,16 @@
 #[derive(Debug, PartialEq)]
 
-struct Int {
+pub struct Int {
     is_negative: bool,
     digits: Vec<u32>,
 }
 
 impl Int {
-    fn new(is_negative: bool, digits: Vec<u32>) -> Int {
+    pub fn new(is_negative: bool, digits: Vec<u32>) -> Int {
         Int { is_negative, digits }
     }
 
-    fn new_from_i32(num: i32) -> Int {
+    pub fn new_from_i32(num: i32) -> Int {
             Int { is_negative: num < 0, digits: vec![abs(num)] }
     }
 }
