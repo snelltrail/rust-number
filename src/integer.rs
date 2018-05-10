@@ -34,8 +34,13 @@ impl Int {
 
             let (next_digit, next_carry) = add_with_carry(
                 self.digits[i],
-                if i < rhs.digits.len() { self.digits[i] } else { 0 },
-                carry);
+                if i < rhs.digits.len() {
+                    self.digits[i]
+                } else {
+                    0
+                },
+                carry,
+            );
             self.digits[i] = next_digit;
             carry = next_carry;
             i += 1;
@@ -100,10 +105,17 @@ mod tests {
     fn add_with_carry_test() {
         assert_eq!(add_with_carry(0, 0, 0), (0, 0));
         assert_eq!(add_with_carry(1, 1, 1), (3, 0));
-        assert_eq!(add_with_carry(u32::max_value()-1, 1, 0), (u32::max_value(), 0));
-        assert_eq!(add_with_carry(u32::max_value()-1, 0, 1), (u32::max_value(), 0));
+        assert_eq!(add_with_carry(u32::max_value() - 1, 1, 0), (
+            u32::max_value(),
+            0,
+        ));
+        assert_eq!(add_with_carry(u32::max_value() - 1, 0, 1), (
+            u32::max_value(),
+            0,
+        ));
         assert_eq!(add_with_carry(u32::max_value(), 1, 0), (0, 1));
         assert_eq!(add_with_carry(u32::max_value(), 0, 1), (0, 1));
         assert_eq!(add_with_carry(u32::max_value(), 11, 0), (10, 1));
     }
+
 }
