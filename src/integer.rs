@@ -56,6 +56,7 @@ impl AddAssign for Int {
     }
 }
 
+// TODO: Need to implement PartialOrd rather than using derive attribute.
 impl Ord for Int {
     fn cmp(&self, rhs: &Int) -> Ordering {
         if self == rhs {
