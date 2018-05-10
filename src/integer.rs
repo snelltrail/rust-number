@@ -8,8 +8,6 @@ pub struct Int {
 }
 
 impl Int {
-
-
     pub fn new(is_negative: bool, digits: Vec<u32>) -> Int {
         Int {
             is_negative,
