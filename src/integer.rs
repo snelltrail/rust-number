@@ -1,6 +1,8 @@
 use std::cmp::max;
+use std::cmp::Ordering;
+use std::ops::AddAssign;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 
 pub struct Int {
     is_negative: bool,
@@ -34,12 +36,76 @@ impl Int {
 
             let (next_digit, next_carry) = add_with_carry(
                 self.digits[i],
-                if i < rhs.digits.len() { self.digits[i] } else { 0 },
-                carry);
+                if i < rhs.digits.len() {
+                    self.digits[i]
+                } else {
+                    0
+                },
+                carry,
+            );
             self.digits[i] = next_digit;
             carry = next_carry;
             i += 1;
         }
+    }
+}
+
+impl AddAssign for Int {
+    fn add_assign(&mut self, other: Int) {
+        self.add_ignoring_sign(&other);
+    }
+}
+
+impl PartialOrd for Int {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Int {
+    fn cmp(&self, rhs: &Int) -> Ordering {
+        if self == rhs {
+            Ordering::Equal
+        } else if self.is_negative && !rhs.is_negative {
+            Ordering::Less
+        } else if !self.is_negative && rhs.is_negative {
+            Ordering::Greater
+        } else {
+            // Both numbers have the same sign.
+            let both_negative = self.is_negative;
+            if both_negative {
+                if less_in_magnitude(self, rhs) {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            } else {
+                if less_in_magnitude(self, rhs) {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            }
+        }
+    }
+}
+
+// TODO change this to return an `Ordering`
+fn less_in_magnitude(lhs: &Int, rhs: &Int) -> bool {
+    if lhs.digits.len() < rhs.digits.len() {
+        true
+    } else if lhs.digits.len() > rhs.digits.len() {
+        false
+    } else {
+        for i in (lhs.digits.len()..0).rev() {
+            if lhs.digits[i] < rhs.digits[i] {
+                return true;
+            } else if lhs.digits[i] > rhs.digits[i] {
+                return false;
+            }
+        }
+        // At this point, the numbers must be equal.
+        false
     }
 }
 
@@ -87,23 +153,42 @@ mod tests {
                 digits: vec![1, 2],
             }
         );
-    }
 
-    #[test]
-    fn abs_test() {
-        assert_eq!(abs(-2), 2);
-        assert_eq!(abs(0), 0);
-        assert_eq!(abs(i32::min_value()), i32::max_value() as u32 + 1);
-    }
+        #[test]
+        fn abs_test() {
+            assert_eq!(abs(-2), 2);
+            assert_eq!(abs(0), 0);
+            assert_eq!(abs(i32::min_value()), i32::max_value() as u32 + 1);
+        }
 
-    #[test]
-    fn add_with_carry_test() {
-        assert_eq!(add_with_carry(0, 0, 0), (0, 0));
-        assert_eq!(add_with_carry(1, 1, 1), (3, 0));
-        assert_eq!(add_with_carry(u32::max_value()-1, 1, 0), (u32::max_value(), 0));
-        assert_eq!(add_with_carry(u32::max_value()-1, 0, 1), (u32::max_value(), 0));
-        assert_eq!(add_with_carry(u32::max_value(), 1, 0), (0, 1));
-        assert_eq!(add_with_carry(u32::max_value(), 0, 1), (0, 1));
-        assert_eq!(add_with_carry(u32::max_value(), 11, 0), (10, 1));
+        #[test]
+        fn add_with_carry_test() {
+            assert_eq!(add_with_carry(0, 0, 0), (0, 0));
+            assert_eq!(add_with_carry(1, 1, 1), (3, 0));
+            assert_eq!(
+                add_with_carry(u32::max_value() - 1, 1, 0),
+                (u32::max_value(), 0)
+            );
+            assert_eq!(
+                add_with_carry(u32::max_value() - 1, 0, 1),
+                (u32::max_value(), 0)
+            );
+            assert_eq!(add_with_carry(u32::max_value(), 1, 0), (0, 1));
+            assert_eq!(add_with_carry(u32::max_value(), 0, 1), (0, 1));
+            assert_eq!(add_with_carry(u32::max_value(), 11, 0), (10, 1));
+        }
+
+        #[test]
+        fn add_assign_test() {
+            let mut a = Int::new_from_i32(0);
+            a += Int::new_from_i32(0);
+            assert_eq!(
+                a,
+                Int {
+                    is_negative: false,
+                    digits: vec![0],
+                }
+            );
+        }
     }
 }
