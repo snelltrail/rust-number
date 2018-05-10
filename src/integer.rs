@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 #[derive(Debug, PartialEq)]
 
 pub struct Int {
@@ -6,6 +8,8 @@ pub struct Int {
 }
 
 impl Int {
+
+
     pub fn new(is_negative: bool, digits: Vec<u32>) -> Int {
         Int {
             is_negative,
@@ -19,9 +23,29 @@ impl Int {
             digits: vec![abs(num)],
         }
     }
+
+    pub fn add_ignoring_sign(&mut self, rhs: &Int) {
+        let mut carry: u32 = 0;
+        let mut i = 0;
+        while i < max(self.digits.len(), rhs.digits.len()) || carry != 0 {
+            // Make sure that self.digits is big enough to store the next digit
+            if i >= self.digits.len() {
+                self.digits.push(0);
+                assert_eq!(i, self.digits.len() - 1);
+            }
+
+            let (next_digit, next_carry) = add_with_carry(
+                self.digits[i],
+                if i < rhs.digits.len() { self.digits[i] } else { 0 },
+                carry);
+            self.digits[i] = next_digit;
+            carry = next_carry;
+            i += 1;
+        }
+    }
 }
 
-pub fn add_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
+fn add_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
     assert!(carry == 1 || carry == 0);
     let big_x = x as u64;
     let big_y = y as u64;
