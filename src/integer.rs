@@ -53,6 +53,9 @@ impl Int {
 
 impl AddAssign for Int {
     fn add_assign(&mut self, other: Int) {
+        if self.is_negative || other.is_negative {
+            unimplemented!()
+        }
         self.add_ignoring_sign(&other);
     }
 }
