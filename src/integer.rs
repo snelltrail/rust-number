@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::ops::AddAssign;
 use std::ops::Add;
 
-#[derive(Debug, Eq, PartialEq, PartialOrd)]
+#[derive(Debug, Eq, PartialEq)]
 
 pub struct Int {
     is_negative: bool,
@@ -73,51 +73,52 @@ impl Add for Int {
     }
 }
 
-// TODO: Need to implement PartialOrd rather than using derive attribute.
+impl PartialOrd for Int {
+    fn partial_cmp(&self, other: &Int) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Ord for Int {
     fn cmp(&self, rhs: &Int) -> Ordering {
-        if self == rhs {
-            Ordering::Equal
-        } else if self.is_negative && !rhs.is_negative {
+        if self.is_negative && !rhs.is_negative {
             Ordering::Less
         } else if !self.is_negative && rhs.is_negative {
             Ordering::Greater
         } else {
             // Both numbers have the same sign.
             let both_negative = self.is_negative;
-            if both_negative {
-                if less_in_magnitude(self, rhs) {
+            match less_in_magnitude(self, rhs) {
+                Ordering::Less => if both_negative {
                     Ordering::Greater
                 } else {
                     Ordering::Less
-                }
-            } else {
-                if less_in_magnitude(self, rhs) {
+                },
+                Ordering::Greater => if both_negative {
                     Ordering::Less
                 } else {
                     Ordering::Greater
-                }
+                },
+                Ordering::Equal => Ordering::Equal,
             }
         }
     }
 }
 
-// TODO change this to return an `Ordering`
-fn less_in_magnitude(lhs: &Int, rhs: &Int) -> bool {
+fn less_in_magnitude(lhs: &Int, rhs: &Int) -> Ordering {
     if lhs.digits.len() < rhs.digits.len() {
-        true
+        Ordering::Less
     } else if lhs.digits.len() > rhs.digits.len() {
-        false
+        Ordering::Greater
     } else {
-        for i in (lhs.digits.len()..0).rev() {
+        for i in (0..lhs.digits.len()).rev() {
             if lhs.digits[i] < rhs.digits[i] {
-                return true;
+                return Ordering::Less;
             } else if lhs.digits[i] > rhs.digits[i] {
-                return false;
+                return Ordering::Greater;
             }
         }
-        // At this point, the numbers must be equal.
-        false
+        Ordering::Equal
     }
 }
 
@@ -172,6 +173,34 @@ mod tests {
         assert_eq!(abs(-2), 2);
         assert_eq!(abs(0), 0);
         assert_eq!(abs(i32::min_value()), i32::max_value() as u32 + 1);
+    }
+
+    #[test]
+    fn ord_test() {
+        let negative_hundred = Int {
+            is_negative: true,
+            digits: vec![100],
+        };
+        let negative_one = Int {
+            is_negative: true,
+            digits: vec![1],
+        };
+        let zero = Int {
+            is_negative: false,
+            digits: vec![0],
+        };
+        let one = Int {
+            is_negative: false,
+            digits: vec![1],
+        };
+        let hundred = Int {
+            is_negative: false,
+            digits: vec![100],
+        };
+        assert!(negative_hundred < negative_one);
+        assert!(negative_one < zero);
+        assert!(zero < one);
+        assert!(one < hundred);
     }
 
     #[test]
