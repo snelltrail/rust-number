@@ -127,7 +127,7 @@ fn add_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
 pub fn abs(x: i32) -> u32 {
     if x < 0 {
         if x == i32::min_value() {
-            0x80000000
+            0x80000000u32
         } else {
             -x as u32
         }
