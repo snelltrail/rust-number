@@ -1,6 +1,7 @@
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::ops::AddAssign;
+use std::ops::Add;
 
 #[derive(Debug, Eq, PartialEq, PartialOrd)]
 
@@ -53,6 +54,19 @@ impl Int {
 impl AddAssign for Int {
     fn add_assign(&mut self, other: Int) {
         self.add_ignoring_sign(&other);
+    }
+}
+
+impl Add for Int {
+    type Output = Int;
+
+    fn add(self, other: Int) -> Int {
+        let mut res = Int {
+            is_negative: self.is_negative,
+            digits: self.digits,
+        };
+        res += other;
+        return res;
     }
 }
 
@@ -183,6 +197,35 @@ mod tests {
             Int {
                 is_negative: false,
                 digits: vec![0],
+            }
+        );
+    }
+
+    #[test]
+    fn add_test() {
+        let a = Int::new_from_i32(0) + Int::new_from_i32(0);
+        assert_eq!(
+            a,
+            Int {
+                is_negative: false,
+                digits: vec![0],
+            }
+        );
+        let b = Int::new_from_i32(2) + Int::new_from_i32(3);
+        assert_eq!(
+            b,
+            Int {
+                is_negative: false,
+                digits: vec![5],
+            }
+        );
+        let c = Int::new_from_i32(i32::max_value()) + Int::new_from_i32(i32::max_value())
+            + Int::new_from_i32(i32::max_value());
+        assert_eq!(
+            c,
+            Int {
+                is_negative: false,
+                digits: vec![2147483645, 1],
             }
         );
     }
