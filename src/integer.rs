@@ -37,7 +37,7 @@ impl Int {
             let (next_digit, next_carry) = add_with_carry(
                 self.digits[i],
                 if i < rhs.digits.len() {
-                    self.digits[i]
+                    rhs.digits[i]
                 } else {
                     0
                 },
