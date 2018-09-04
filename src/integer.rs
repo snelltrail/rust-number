@@ -300,10 +300,15 @@ mod tests {
             is_negative: false,
             digits: vec![100],
         };
+        let overflow_one = Int {
+            is_negative: false,
+            digits: vec![u32::max_value(), 1],
+        };
         assert!(negative_hundred < negative_one);
         assert!(negative_one < zero);
         assert!(zero < one);
         assert!(one < hundred);
+        assert!(overflow_one > one);
     }
 
     #[test]
