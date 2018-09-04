@@ -1,13 +1,19 @@
-use std::cmp::max;
-use std::cmp::Ordering;
-use std::ops::AddAssign;
-use std::ops::Add;
+use std::cmp::{max, Ordering};
+use std::ops::{Add, AddAssign};
 
 #[derive(Debug, Eq, PartialEq)]
-
 pub struct Int {
     is_negative: bool,
     digits: Vec<u32>,
+}
+
+impl From<i32> for Int {
+    fn from(num: i32) -> Self {
+        Int {
+            is_negative: num < 0,
+            digits: vec![abs(num)],
+        }
+    }
 }
 
 impl Int {
@@ -15,13 +21,6 @@ impl Int {
         Int {
             is_negative,
             digits,
-        }
-    }
-
-    pub fn new_from_i32(num: i32) -> Int {
-        Int {
-            is_negative: num < 0,
-            digits: vec![abs(num)],
         }
     }
 
@@ -156,7 +155,23 @@ pub fn abs(x: i32) -> u32 {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
+
+    #[test]
+    fn test_from_u32() {
+        let two = Int {
+            is_negative: false,
+            digits: vec![2],
+        };
+        let negative_hundred = Int {
+            is_negative: true,
+            digits: vec![100],
+        };
+        assert_eq!(two, Int::from(2));
+        assert_eq!(negative_hundred, Int::from(-100));
+    }
+
     #[test]
     fn int_works() {
         assert_eq!(
@@ -222,8 +237,8 @@ mod tests {
 
     #[test]
     fn add_assign_test() {
-        let mut a = Int::new_from_i32(0);
-        a += Int::new_from_i32(0);
+        let mut a = Int::from(0);
+        a += Int::from(0);
         assert_eq!(
             a,
             Int {
@@ -235,7 +250,7 @@ mod tests {
 
     #[test]
     fn add_test() {
-        let a = Int::new_from_i32(0) + Int::new_from_i32(0);
+        let a = Int::from(0) + Int::from(0);
         assert_eq!(
             a,
             Int {
@@ -243,7 +258,7 @@ mod tests {
                 digits: vec![0],
             }
         );
-        let b = Int::new_from_i32(2) + Int::new_from_i32(3);
+        let b = Int::from(2) + Int::from(3);
         assert_eq!(
             b,
             Int {
@@ -251,8 +266,8 @@ mod tests {
                 digits: vec![5],
             }
         );
-        let c = Int::new_from_i32(i32::max_value()) + Int::new_from_i32(i32::max_value())
-            + Int::new_from_i32(i32::max_value());
+        let c =
+            Int::from(i32::max_value()) + Int::from(i32::max_value()) + Int::from(i32::max_value());
         assert_eq!(
             c,
             Int {
