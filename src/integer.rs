@@ -2,8 +2,12 @@ use std::cmp::max;
 use std::cmp::Ordering;
 use std::ops::AddAssign;
 use std::ops::Add;
+use std::ops::Sub;
+use std::ops::SubAssign;
+use std::ops::MulAssign;
+use std::ops::Mul;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 
 pub struct Int {
     is_negative: bool,
@@ -49,6 +53,42 @@ impl Int {
             i += 1;
         }
     }
+
+    fn remove_leading_zeros(&mut self) {
+        while self.digits.len() > 1 && *self.digits.last().unwrap() == 0u32 {
+            self.digits.pop();
+        }
+    }
+
+    fn borrow_from_neighbour(&mut self, neighbour: usize) {
+        assert!(neighbour < self.digits.len());
+        let mut curr = neighbour;
+        while self.digits[curr] == 0 {
+            self.digits[curr] = u32::max_value();
+            curr += 1;
+            assert!(curr < self.digits.len());
+        }
+        self.digits[curr] -= 1;
+    }
+
+    fn subtract_ignoring_sign(&mut self, rhs: &Int) {
+        assert!(match less_in_magnitude(self, rhs) {
+            Ordering::Less => false,
+            Ordering::Equal => true,
+            Ordering::Greater => true,
+        });
+        for i in 0..self.digits.len() {
+            let curr_rhs_digit = match rhs.digits.get(i) {
+                Some(x) => x,
+                None => &0u32,
+            };
+            if self.digits[i] < *curr_rhs_digit {
+                self.borrow_from_neighbour(i + 1);
+            }
+            self.digits[i] -= *curr_rhs_digit;
+        }
+        self.remove_leading_zeros();
+    }
 }
 
 impl AddAssign for Int {
@@ -69,6 +109,57 @@ impl Add for Int {
             digits: self.digits,
         };
         res += other;
+        return res;
+    }
+}
+
+impl SubAssign for Int {
+    fn sub_assign(&mut self, other: Int) {
+        if self.is_negative || other.is_negative || match less_in_magnitude(self, &other) {
+            Ordering::Less => true,
+            Ordering::Equal => false,
+            Ordering::Greater => false,
+        } {
+            unimplemented!();
+        }
+        self.subtract_ignoring_sign(&other);
+    }
+}
+
+impl Sub for Int {
+    type Output = Int;
+
+    fn sub(self, other: Int) -> Int {
+        let mut res = Int {
+            is_negative: self.is_negative,
+            digits: self.digits,
+        };
+        res -= other;
+        return res;
+    }
+}
+
+impl MulAssign for Int {
+    fn mul_assign(&mut self, rhs: Int) {
+        if self.is_negative || rhs.is_negative {
+            unimplemented!();
+        }
+        let mut rhs_copy = rhs;
+        let self_copy = self.clone();
+        while rhs_copy != Int::new_from_i32(1) {
+            // TODO: Fix unnecessary copies. Why does add_assign take ownership?
+            *self += self_copy.clone();
+            rhs_copy -= Int::new_from_i32(1);
+        }
+    }
+}
+
+impl Mul for Int {
+    type Output = Int;
+
+    fn mul(self, other: Int) -> Int {
+        let mut res = self.clone();
+        res *= other;
         return res;
     }
 }
@@ -258,6 +349,57 @@ mod tests {
             Int {
                 is_negative: false,
                 digits: vec![2147483645, 1],
+            }
+        );
+    }
+
+    #[test]
+    fn sub_test() {
+        let a = Int::new_from_i32(0) - Int::new_from_i32(0);
+        assert_eq!(
+            a,
+            Int {
+                is_negative: false,
+                digits: vec![0],
+            }
+        );
+        let b = Int::new_from_i32(3) - Int::new_from_i32(2);
+        assert_eq!(
+            b,
+            Int {
+                is_negative: false,
+                digits: vec![1],
+            }
+        );
+        let mut c = Int::new_from_i32(i32::max_value()) + Int::new_from_i32(i32::max_value())
+            + Int::new_from_i32(i32::max_value());
+        c -= Int::new_from_i32(1);
+        assert_eq!(
+            c,
+            Int {
+                is_negative: false,
+                digits: vec![2147483644, 1],
+            }
+        );
+    }
+
+    #[test]
+    fn mul_test() {
+        let mut a = Int::new_from_i32(5);
+        a *= Int::new_from_i32(7);
+        assert_eq!(
+            a,
+            Int {
+                is_negative: false,
+                digits: vec![35],
+            }
+        );
+        let b = Int::new_from_i32(3) * Int::new_from_i32(2);
+        assert_eq!(
+            b,
+            Int {
+                is_negative: false,
+                digits: vec![6],
             }
         );
     }
