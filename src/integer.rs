@@ -25,7 +25,7 @@ impl Int {
         }
     }
 
-    pub fn add_ignoring_sign(&mut self, rhs: &Int) {
+    fn add_ignoring_sign(&mut self, rhs: &Int) {
         let mut carry: u32 = 0;
         let mut i = 0;
         while i < max(self.digits.len(), rhs.digits.len()) || carry != 0 {
