@@ -89,10 +89,13 @@ impl Int {
 
 impl AddAssign for Int {
     fn add_assign(&mut self, other: Int) {
-        if self.is_negative || other.is_negative {
+        if self.is_negative && other.is_negative {
+            self.add_ignoring_sign(&other);
+        } else if self.is_negative || other.is_negative {
             unimplemented!()
+        } else {
+            self.add_ignoring_sign(&other);
         }
-        self.add_ignoring_sign(&other);
     }
 }
 
@@ -368,6 +371,23 @@ mod tests {
                 digits: vec![2147483645, 1],
             }
         );
+        let d = Int::from(-1) + Int::from(-2);
+        println!("{:?}, {:?}, {:?}", Int::from(-1), Int::from(-2), d);
+        assert_eq!(
+            d,
+            Int {
+                is_negative: true,
+                digits: vec![3],
+            }
+        );
+        //let e = Int::from(-1) + Int::from(1);
+        //assert_eq!(
+        //    e,
+        //      Int {
+        //          is_negative: false,
+        //          digits: vec![0]
+        //      }
+        //  );
     }
 
     #[test]
