@@ -1,5 +1,5 @@
 use std::cmp::{max, Ordering};
-use std::ops::{Add, AddAssign, Sub, SubAssign, MulAssign, Mul};
+use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 
@@ -68,7 +68,7 @@ impl Int {
     }
 
     fn subtract_ignoring_sign(&mut self, rhs: &Int) {
-        assert!(match less_in_magnitude(self, rhs) {
+        assert!(match compare_in_magnitude(self, rhs) {
             Ordering::Less => false,
             Ordering::Equal => true,
             Ordering::Greater => true,
@@ -81,37 +81,83 @@ impl Int {
             if self.digits[i] < *curr_rhs_digit {
                 self.borrow_from_neighbour(i + 1);
             }
-            self.digits[i] -= *curr_rhs_digit;
+            if *curr_rhs_digit <= self.digits[i] {
+                self.digits[i] -= *curr_rhs_digit;
+            } else {
+                self.digits[i] = ((u32::max_value() - curr_rhs_digit) + self.digits[i]) + 1;
+            }
         }
         self.remove_leading_zeros();
     }
 }
 
-impl AddAssign for Int {
-    fn add_assign(&mut self, other: Int) {
-        if self.is_negative || other.is_negative {
-            unimplemented!()
+impl<'a> AddAssign<&'a Int> for Int {
+    fn add_assign(&mut self, other: &Int) {
+        if !self.is_negative && !other.is_negative {
+            // Both nonnegative.
+            self.add_ignoring_sign(other);
+        } else if self.is_negative && other.is_negative {
+            // Both are negative.
+            self.add_ignoring_sign(other);
+        } else {
+            // One is negative, one is positive.
+            match compare_in_magnitude(self, other) {
+                Ordering::Equal => {
+                    *self = Int::from(0);
+                }
+                Ordering::Greater => {
+                    self.subtract_ignoring_sign(other);
+                }
+                Ordering::Less => {
+                    let mut temp = self.clone();
+                    *self = other.clone();
+                    self.subtract_ignoring_sign(&temp);
+                }
+            }
         }
-        self.add_ignoring_sign(&other);
     }
 }
 
-impl Add for Int {
+impl<'a, 'b> Add<&'b Int> for &'a Int {
     type Output = Int;
 
-    fn add(self, other: Int) -> Int {
-        let mut res = Int {
-            is_negative: self.is_negative,
-            digits: self.digits,
-        };
-        res += other;
-        return res;
+    fn add(self, other: &Int) -> Int {
+        let mut self_clone = self.clone();
+        self_clone += other;
+        self_clone
+    }
+}
+
+impl<'a> Add<Int> for &'a Int {
+    type Output = Int;
+
+    fn add(self, mut other: Int) -> Int {
+        other += self;
+        other
+    }
+}
+
+impl<'a> Add<&'a Int> for Int {
+    type Output = Int;
+
+    fn add(mut self, other: &Int) -> Int {
+        self += other;
+        self
+    }
+}
+
+impl Add<Int> for Int {
+    type Output = Int;
+
+    fn add(mut self, other: Int) -> Int {
+        self += &other;
+        self
     }
 }
 
 impl SubAssign for Int {
     fn sub_assign(&mut self, other: Int) {
-        if self.is_negative || other.is_negative || match less_in_magnitude(self, &other) {
+        if self.is_negative || other.is_negative || match compare_in_magnitude(self, &other) {
             Ordering::Less => true,
             Ordering::Equal => false,
             Ordering::Greater => false,
@@ -144,7 +190,7 @@ impl MulAssign for Int {
         let self_copy = self.clone();
         while rhs_copy != Int::from(1) {
             // TODO: Fix unnecessary copies. Why does add_assign take ownership?
-            *self += self_copy.clone();
+            *self += &self_copy.clone();
             rhs_copy -= Int::from(1);
         }
     }
@@ -175,7 +221,7 @@ impl Ord for Int {
         } else {
             // Both numbers have the same sign.
             let both_negative = self.is_negative;
-            match less_in_magnitude(self, rhs) {
+            match compare_in_magnitude(self, rhs) {
                 Ordering::Less => if both_negative {
                     Ordering::Greater
                 } else {
@@ -192,7 +238,7 @@ impl Ord for Int {
     }
 }
 
-fn less_in_magnitude(lhs: &Int, rhs: &Int) -> Ordering {
+fn compare_in_magnitude(lhs: &Int, rhs: &Int) -> Ordering {
     if lhs.digits.len() < rhs.digits.len() {
         Ordering::Less
     } else if lhs.digits.len() > rhs.digits.len() {
@@ -326,7 +372,7 @@ mod tests {
     #[test]
     fn add_assign_test() {
         let mut a = Int::from(0);
-        a += Int::from(0);
+        a += &Int::from(0);
         assert_eq!(
             a,
             Int {
@@ -338,31 +384,56 @@ mod tests {
 
     #[test]
     fn add_test() {
-        let a = Int::from(0) + Int::from(0);
-        assert_eq!(
-            a,
-            Int {
-                is_negative: false,
-                digits: vec![0],
-            }
-        );
-        let b = Int::from(2) + Int::from(3);
-        assert_eq!(
-            b,
-            Int {
-                is_negative: false,
-                digits: vec![5],
-            }
-        );
-        let c =
-            Int::from(i32::max_value()) + Int::from(i32::max_value()) + Int::from(i32::max_value());
-        assert_eq!(
-            c,
-            Int {
-                is_negative: false,
-                digits: vec![2147483645, 1],
-            }
-        );
+        let negative_two = Int::from(-2);
+        let negative_one = Int::from(-1);
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let two = Int::from(2);
+        assert_eq!(&negative_two + &one, negative_one);
+        assert_eq!(&negative_two + &two, zero);
+        assert_eq!(&zero + &zero, zero);
+        assert_eq!(Int::from(2) + Int::from(-2), Int::from(0));
+        assert_eq!(&one + &one, two);
+
+        let a = Int {
+            is_negative: false,
+            digits: vec![9, 9, 1, 0, 0, 0, 1],
+        };
+        let minus_a = Int {
+            is_negative: true,
+            digits: vec![9, 9, 1, 0, 0, 0, 1],
+        };
+        let b = Int {
+            is_negative: false,
+            digits: vec![14, 9, 1, 0, 0, 0, 1],
+        };
+        let minus_b = Int {
+            is_negative: true,
+            digits: vec![14, 9, 1, 0, 0, 0, 1],
+        };
+        let c = Int {
+            is_negative: false,
+            digits: vec![23, 18, 2, 0, 0, 0, 2],
+        };
+        let minus_c = Int {
+            is_negative: true,
+            digits: vec![23, 18, 2, 0, 0, 0, 2],
+        };
+        assert_eq!(&a + &minus_a, zero);
+        assert_eq!(&a + Int::from(5), b);
+        assert_eq!(&a + &b, c);
+        assert_eq!(&a + &minus_b, Int::from(-5));
+        assert_eq!(&a + &minus_c, minus_b);
+
+        let d = Int {
+            is_negative: false,
+            digits: vec![4294967295u32],
+        };
+        let e = Int {
+            is_negative: false,
+            digits: vec![0, 1],
+        };
+        assert_eq!(&e + &negative_one, d);
     }
 
     #[test]
@@ -383,8 +454,8 @@ mod tests {
                 digits: vec![1],
             }
         );
-        let mut c = Int::from(i32::max_value()) + Int::from(i32::max_value())
-            + Int::from(i32::max_value());
+        let mut c =
+            Int::from(i32::max_value()) + Int::from(i32::max_value()) + Int::from(i32::max_value());
         c -= Int::from(1);
         assert_eq!(
             c,
