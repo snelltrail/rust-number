@@ -81,7 +81,7 @@ impl Int {
             if self.digits[i] < *curr_rhs_digit {
                 self.borrow_from_neighbour(i + 1);
             }
-            if *curr_rhs_digit <= self.digits[i] {
+            if *curr_rhs_digit <= self.digits[i] {  // Check for underflow.
                 self.digits[i] -= *curr_rhs_digit;
             } else {
                 self.digits[i] = ((u32::max_value() - curr_rhs_digit) + self.digits[i]) + 1;
