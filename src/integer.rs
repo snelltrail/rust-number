@@ -1,5 +1,5 @@
 use std::cmp::{max, Ordering};
-use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 
@@ -102,6 +102,32 @@ impl Int {
     }
 }
 
+impl<'a> Neg for &'a Int {
+    type Output = Int;
+
+    fn neg(self) -> Int {
+        if *self == Int::from(0) {
+            Int::from(0)
+        } else {
+            Int {
+                is_negative: !self.is_negative,
+                digits: self.digits.clone(),
+            }
+        }
+    }
+}
+
+impl Neg for Int {
+    type Output = Int;
+
+    fn neg(mut self) -> Int {
+        if self != Int::from(0) {
+            self.is_negative = !self.is_negative;
+        }
+        self
+    }
+}
+
 impl<'a> AddAssign<&'a Int> for Int {
     fn add_assign(&mut self, other: &Int) {
         if !self.is_negative && !other.is_negative {
@@ -166,6 +192,39 @@ impl Add<Int> for Int {
     }
 }
 
+//TODO: Implement Sub using SubAssign to avoid unnecessary copies
+impl<'a, 'b> Sub<&'b Int> for &'a Int {
+    type Output = Int;
+
+    fn sub(self, other: &Int) -> Int {
+        self + (-other)
+    }
+}
+
+impl<'a> Sub<Int> for &'a Int {
+    type Output = Int;
+
+    fn sub(self, other: Int) -> Int {
+        self + (-other)
+    }
+}
+
+impl<'a> Sub<&'a Int> for Int {
+    type Output = Int;
+
+    fn sub(self, other: &Int) -> Int {
+        self + (-other)
+    }
+}
+
+impl Sub<Int> for Int {
+    type Output = Int;
+
+    fn sub(self, other: Int) -> Int {
+        self + (-other)
+    }
+}
+
 impl SubAssign for Int {
     fn sub_assign(&mut self, other: Int) {
         if self.is_negative || other.is_negative || match compare_in_magnitude(self, &other) {
@@ -176,19 +235,6 @@ impl SubAssign for Int {
             unimplemented!();
         }
         self.subtract_ignoring_sign(&other);
-    }
-}
-
-impl Sub for Int {
-    type Output = Int;
-
-    fn sub(self, other: Int) -> Int {
-        let mut res = Int {
-            is_negative: self.is_negative,
-            digits: self.digits,
-        };
-        res -= other;
-        return res;
     }
 }
 
@@ -503,6 +549,14 @@ mod tests {
             digits: vec![0, 1],
         };
         assert_eq!(&e + &negative_one, d);
+    }
+
+    #[test]
+    fn neg_test() {
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        assert_eq!(zero, -&zero);
+        assert_eq!(-one, Int::from(-1));
     }
 
     #[test]
