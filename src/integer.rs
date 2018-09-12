@@ -109,8 +109,11 @@ impl<'a> Neg for &'a Int {
 impl Neg for Int {
     type Output = Int;
 
-    fn neg(self) -> Int {
-        -&self
+    fn neg(mut self) -> Int {
+        if self != Int::from(0) {
+            self.is_negative = !self.is_negative;
+        }
+        self
     }
 }
 
