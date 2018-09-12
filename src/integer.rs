@@ -81,13 +81,24 @@ impl Int {
             if self.digits[i] < *curr_rhs_digit {
                 self.borrow_from_neighbour(i + 1);
             }
-            if *curr_rhs_digit <= self.digits[i] {  // Check for underflow.
+            if *curr_rhs_digit <= self.digits[i] {
+                // Check for underflow.
                 self.digits[i] -= *curr_rhs_digit;
             } else {
                 self.digits[i] = ((u32::max_value() - curr_rhs_digit) + self.digits[i]) + 1;
             }
         }
         self.remove_leading_zeros();
+    }
+
+    fn shift_by(&mut self, i: usize) {
+        if *self != Int::from(0) {
+            for _ in 0..i {
+                // TODO: This can be implemented more efficiently by adding zeros to the
+                // end and rotating.
+                self.digits.insert(0, 0);
+            }
+        }
     }
 }
 
@@ -183,15 +194,17 @@ impl Sub for Int {
 
 impl<'a> MulAssign<&'a Int> for Int {
     fn mul_assign(&mut self, other: &Int) {
-    	if self.is_negative || other.is_negative {
-            unimplemented!();
+        let mut res = Int::from(0);
+        for i in 0..other.digits.len() {
+            let mut single_multiplication = multiply_ignoring_sign(self, other.digits[i]);
+            single_multiplication.shift_by(i);
+            res += &single_multiplication;
         }
-        let mut other_copy = other.clone();
-        let self_copy = self.clone();
-        while other_copy != Int::from(1) {
-            *self += &self_copy;
-            other_copy -= Int::from(1);
+        res.is_negative = self.is_negative ^ other.is_negative;
+        if res.digits.len() == 1 && res.digits[0] == 0 {
+            res.is_negative = false;
         }
+        *self = res;
     }
 }
 
@@ -264,6 +277,25 @@ impl Ord for Int {
     }
 }
 
+fn multiply_ignoring_sign(lhs: &Int, rhs: u32) -> Int {
+    let mut res = Int {
+        is_negative: false,
+        digits: vec![],
+    };
+    let mut carry = 0u32;
+    for i in 0..lhs.digits.len() {
+        let (next_digit, next_carry) = multiply_with_carry(lhs.digits[i], rhs, carry);
+        res.digits.push(next_digit);
+        carry = next_carry;
+    }
+
+    if carry != 0 {
+        res.digits.push(carry);
+    }
+
+    res
+}
+
 fn compare_in_magnitude(lhs: &Int, rhs: &Int) -> Ordering {
     if lhs.digits.len() < rhs.digits.len() {
         Ordering::Less
@@ -290,6 +322,16 @@ fn add_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
     let sum = result as u32;
     let result_carry = (result >> 32) as u32;
     (sum, result_carry)
+}
+
+fn multiply_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
+    let big_x = x as u64;
+    let big_y = y as u64;
+    let big_carry = carry as u64;
+    let res = big_x * big_y + big_carry;
+    let prod = res as u32;
+    let res_carry = (res >> 32) as u32;
+    (prod, res_carry)
 }
 
 /// Returns the absolute value of the given number.
@@ -493,23 +535,48 @@ mod tests {
     }
 
     #[test]
-    fn mul_test() {
-        let mut a = Int::from(5);
-        a *= &Int::from(7);
-        assert_eq!(
-            a,
-            Int {
-                is_negative: false,
-                digits: vec![35],
-            }
-        );
-        let b = Int::from(3) * Int::from(2);
-        assert_eq!(
-            b,
-            Int {
-                is_negative: false,
-                digits: vec![6],
-            }
-        );
+    fn mul_small_test() {
+        let negative_two = Int::from(-2);
+        let negative_one = Int::from(-1);
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let two = Int::from(2);
+        assert_eq!(&negative_two * &one, negative_two);
+        assert_eq!(&negative_two * &zero, zero);
+        assert_eq!(&zero * &zero, zero);
+        assert_eq!(&negative_one * &negative_one, one);
+        assert_eq!(&one * &one, one);
+        assert_eq!(&one * &two, two);
+    }
+
+    #[test]
+    fn mul_large_test() {
+        let a = Int {
+            is_negative: false,
+            digits: vec![4294967295u32],
+        };
+        let b = Int {
+            is_negative: false,
+            digits: vec![0, 1],
+        };
+        let c = Int {
+            is_negative: false,
+            digits: vec![0, 4294967295u32],
+        };
+        assert_eq!(a * b, c);
+
+        let d = Int {
+            is_negative: false,
+            digits: vec![9, 9, 1, 0, 0, 0, 1],
+        };
+        let e = Int {
+            is_negative: false,
+            digits: vec![14, 9, 1, 0, 0, 0, 1],
+        };
+        let f = Int {
+            is_negative: false,
+            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
+        };
+        assert_eq!(d * e, f);
     }
 }
