@@ -204,6 +204,7 @@ impl<'a> MulAssign<&'a Int> for Int {
         if res.digits.len() == 1 && res.digits[0] == 0 {
             res.is_negative = false;
         }
+        res.remove_leading_zeros();
         *self = res;
     }
 }
@@ -577,6 +578,7 @@ mod tests {
             is_negative: false,
             digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
         };
-        assert_eq!(d * e, f);
+        assert_eq!(&d * e, f);
+        assert_eq!(d * Int::from(0), Int::from(0));
     }
 }
