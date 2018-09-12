@@ -181,28 +181,54 @@ impl Sub for Int {
     }
 }
 
-impl MulAssign for Int {
-    fn mul_assign(&mut self, rhs: Int) {
-        if self.is_negative || rhs.is_negative {
+impl<'a> MulAssign<&'a Int> for Int {
+    fn mul_assign(&mut self, other: &Int) {
+    	if self.is_negative || other.is_negative {
             unimplemented!();
         }
-        let mut rhs_copy = rhs;
+        let mut other_copy = other.clone();
         let self_copy = self.clone();
-        while rhs_copy != Int::from(1) {
-            // TODO: Fix unnecessary copies. Why does add_assign take ownership?
-            *self += &self_copy.clone();
-            rhs_copy -= Int::from(1);
+        while other_copy != Int::from(1) {
+            *self += &self_copy;
+            other_copy -= Int::from(1);
         }
     }
 }
 
-impl Mul for Int {
+impl<'a, 'b> Mul<&'b Int> for &'a Int {
     type Output = Int;
 
-    fn mul(self, other: Int) -> Int {
-        let mut res = self.clone();
-        res *= other;
-        return res;
+    fn mul(self, other: &Int) -> Int {
+        let mut self_clone = self.clone();
+        self_clone *= other;
+        self_clone
+    }
+}
+
+impl<'a> Mul<Int> for &'a Int {
+    type Output = Int;
+
+    fn mul(self, mut other: Int) -> Int {
+        other *= self;
+        other
+    }
+}
+
+impl<'a> Mul<&'a Int> for Int {
+    type Output = Int;
+
+    fn mul(mut self, other: &Int) -> Int {
+        self *= other;
+        self
+    }
+}
+
+impl Mul<Int> for Int {
+    type Output = Int;
+
+    fn mul(mut self, other: Int) -> Int {
+        self *= &other;
+        self
     }
 }
 
@@ -469,7 +495,7 @@ mod tests {
     #[test]
     fn mul_test() {
         let mut a = Int::from(5);
-        a *= Int::from(7);
+        a *= &Int::from(7);
         assert_eq!(
             a,
             Int {
