@@ -90,6 +90,16 @@ impl Int {
         }
         self.remove_leading_zeros();
     }
+
+    fn shift_by(&mut self, i: usize) {
+        if *self != Int::from(0) {
+            for _ in 0..i {
+                // TODO: This can be implemented more efficiently by adding zeros to the
+                // end and rotating.
+                self.digits.insert(0, 0);
+            }
+        }
+    }
 }
 
 impl<'a> Neg for &'a Int {
@@ -228,28 +238,57 @@ impl SubAssign for Int {
     }
 }
 
-impl MulAssign for Int {
-    fn mul_assign(&mut self, rhs: Int) {
-        if self.is_negative || rhs.is_negative {
-            unimplemented!();
+impl<'a> MulAssign<&'a Int> for Int {
+    fn mul_assign(&mut self, other: &Int) {
+        let mut res = Int::from(0);
+        for i in 0..other.digits.len() {
+            let mut single_multiplication = multiply_ignoring_sign(self, other.digits[i]);
+            single_multiplication.shift_by(i);
+            res += &single_multiplication;
         }
-        let mut rhs_copy = rhs;
-        let self_copy = self.clone();
-        while rhs_copy != Int::from(1) {
-            // TODO: Fix unnecessary copies. Why does add_assign take ownership?
-            *self += &self_copy.clone();
-            rhs_copy -= Int::from(1);
+        res.is_negative = self.is_negative ^ other.is_negative;
+        if res.digits.len() == 1 && res.digits[0] == 0 {
+            res.is_negative = false;
         }
+        res.remove_leading_zeros();
+        *self = res;
     }
 }
 
-impl Mul for Int {
+impl<'a, 'b> Mul<&'b Int> for &'a Int {
     type Output = Int;
 
-    fn mul(self, other: Int) -> Int {
-        let mut res = self.clone();
-        res *= other;
-        return res;
+    fn mul(self, other: &Int) -> Int {
+        let mut self_clone = self.clone();
+        self_clone *= other;
+        self_clone
+    }
+}
+
+impl<'a> Mul<Int> for &'a Int {
+    type Output = Int;
+
+    fn mul(self, mut other: Int) -> Int {
+        other *= self;
+        other
+    }
+}
+
+impl<'a> Mul<&'a Int> for Int {
+    type Output = Int;
+
+    fn mul(mut self, other: &Int) -> Int {
+        self *= other;
+        self
+    }
+}
+
+impl Mul<Int> for Int {
+    type Output = Int;
+
+    fn mul(mut self, other: Int) -> Int {
+        self *= &other;
+        self
     }
 }
 
@@ -285,6 +324,25 @@ impl Ord for Int {
     }
 }
 
+fn multiply_ignoring_sign(lhs: &Int, rhs: u32) -> Int {
+    let mut res = Int {
+        is_negative: false,
+        digits: vec![],
+    };
+    let mut carry = 0u32;
+    for i in 0..lhs.digits.len() {
+        let (next_digit, next_carry) = multiply_with_carry(lhs.digits[i], rhs, carry);
+        res.digits.push(next_digit);
+        carry = next_carry;
+    }
+
+    if carry != 0 {
+        res.digits.push(carry);
+    }
+
+    res
+}
+
 fn compare_in_magnitude(lhs: &Int, rhs: &Int) -> Ordering {
     if lhs.digits.len() < rhs.digits.len() {
         Ordering::Less
@@ -311,6 +369,16 @@ fn add_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
     let sum = result as u32;
     let result_carry = (result >> 32) as u32;
     (sum, result_carry)
+}
+
+fn multiply_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
+    let big_x = x as u64;
+    let big_y = y as u64;
+    let big_carry = carry as u64;
+    let res = big_x * big_y + big_carry;
+    let prod = res as u32;
+    let res_carry = (res >> 32) as u32;
+    (prod, res_carry)
 }
 
 /// Returns the absolute value of the given number.
@@ -522,23 +590,49 @@ mod tests {
     }
 
     #[test]
-    fn mul_test() {
-        let mut a = Int::from(5);
-        a *= Int::from(7);
-        assert_eq!(
-            a,
-            Int {
-                is_negative: false,
-                digits: vec![35],
-            }
-        );
-        let b = Int::from(3) * Int::from(2);
-        assert_eq!(
-            b,
-            Int {
-                is_negative: false,
-                digits: vec![6],
-            }
-        );
+    fn mul_small_test() {
+        let negative_two = Int::from(-2);
+        let negative_one = Int::from(-1);
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let two = Int::from(2);
+        assert_eq!(&negative_two * &one, negative_two);
+        assert_eq!(&negative_two * &zero, zero);
+        assert_eq!(&zero * &zero, zero);
+        assert_eq!(&negative_one * &negative_one, one);
+        assert_eq!(&one * &one, one);
+        assert_eq!(&one * &two, two);
+    }
+
+    #[test]
+    fn mul_large_test() {
+        let a = Int {
+            is_negative: false,
+            digits: vec![4294967295u32],
+        };
+        let b = Int {
+            is_negative: false,
+            digits: vec![0, 1],
+        };
+        let c = Int {
+            is_negative: false,
+            digits: vec![0, 4294967295u32],
+        };
+        assert_eq!(a * b, c);
+
+        let d = Int {
+            is_negative: false,
+            digits: vec![9, 9, 1, 0, 0, 0, 1],
+        };
+        let e = Int {
+            is_negative: false,
+            digits: vec![14, 9, 1, 0, 0, 0, 1],
+        };
+        let f = Int {
+            is_negative: false,
+            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
+        };
+        assert_eq!(&d * e, f);
+        assert_eq!(d * Int::from(0), Int::from(0));
     }
 }
