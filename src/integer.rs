@@ -105,9 +105,9 @@ impl Int {
         if self.digits.len() == 1 {
             self.digits[0] >>= 1;
         } else {
-            for i in 0..self.digits.len()-1 {
+            for i in 0..self.digits.len() - 1 {
                 self.digits[i] >>= 1;
-                let lsb = self.digits[i+1] & 1u32;
+                let lsb = self.digits[i + 1] & 1u32;
                 self.digits[i] |= lsb << 31;
             }
             let last = self.digits.len() - 1;
