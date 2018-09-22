@@ -1,5 +1,5 @@
 use std::cmp::{max, Ordering};
-use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 
@@ -113,6 +113,34 @@ impl Int {
             let last = self.digits.len() - 1;
             self.digits[last] >>= 1;
             self.remove_leading_zeros();
+        }
+    }
+
+    fn divide_ignoring_sign(&mut self, denom: &Int) {
+        // Assumes self is nonnegative and denom is positive.
+        assert!(*denom != Int::from(0));
+        if *self < *denom {
+            *self = Int::from(0);
+        } else {
+            let mut lo = Int::from(0);
+            let mut hi = Int::from(1);
+            hi.shift_by(self.digits.len() - denom.digits.len() + 1);
+            let mut res = Int::from(0);
+            while lo <= hi {
+                let mut mid = &lo + &hi;
+                mid.divide_by_2();
+                let mid_times_denom = &mid * denom;
+                if mid_times_denom == *self {
+                    *self = mid;
+                    return;
+                } else if *self < mid_times_denom {
+                    hi = mid - Int::from(1);
+                } else {
+                    lo = &mid + Int::from(1);
+                    res = mid;
+                }
+            }
+            *self = res;
         }
     }
 }
@@ -303,6 +331,58 @@ impl Mul<Int> for Int {
 
     fn mul(mut self, other: Int) -> Int {
         self *= &other;
+        self
+    }
+}
+
+impl<'a> DivAssign<&'a Int> for Int {
+    fn div_assign(&mut self, other: &Int) {
+        let self_is_negative = self.is_negative;
+        // TODO: Fix this.
+        let mut other_clone = other.clone();
+        self.is_negative = false;
+        other_clone.is_negative = false;
+        self.divide_ignoring_sign(&other_clone);
+        self.is_negative = self_is_negative ^ other.is_negative;
+        if self.digits.len() == 1 && self.digits[0] == 0 {
+            self.is_negative = false;
+        }
+    }
+}
+
+impl<'a, 'b> Div<&'b Int> for &'a Int {
+    type Output = Int;
+
+    fn div(self, other: &Int) -> Int {
+        let mut self_clone = self.clone();
+        self_clone /= other;
+        self_clone
+    }
+}
+
+impl<'a> Div<Int> for &'a Int {
+    type Output = Int;
+
+    fn div(self, mut other: Int) -> Int {
+        other /= self;
+        other
+    }
+}
+
+impl<'a> Div<&'a Int> for Int {
+    type Output = Int;
+
+    fn div(mut self, other: &Int) -> Int {
+        self /= other;
+        self
+    }
+}
+
+impl Div<Int> for Int {
+    type Output = Int;
+
+    fn div(mut self, other: Int) -> Int {
+        self /= &other;
         self
     }
 }
@@ -663,5 +743,38 @@ mod tests {
         };
         a.divide_by_2();
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn div_small_test() {
+        let negative_two = Int::from(-2);
+        let negative_one = Int::from(-1);
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let two = Int::from(2);
+        assert_eq!(&negative_two / &one, negative_two);
+        assert_eq!(&zero / &negative_two, zero);
+        assert_eq!(&negative_one / &negative_one, one);
+        assert_eq!(&one / &one, one);
+        assert_eq!(&two / &two, one);
+    }
+
+    #[test]
+    fn div_large_test() {
+        let a = Int {
+            is_negative: false,
+            digits: vec![9, 9, 1, 0, 0, 0, 1],
+        };
+        let b = Int {
+            is_negative: false,
+            digits: vec![14, 9, 1, 0, 0, 0, 1],
+        };
+        let c = Int {
+            is_negative: false,
+            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
+        };
+        assert_eq!(&c / &a, b);
+        assert_eq!((&c + Int::from(1)) / &a, b);
+        assert_eq!((&c - Int::from(1)) / &a, &b - Int::from(1));
     }
 }
