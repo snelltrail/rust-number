@@ -100,6 +100,21 @@ impl Int {
             }
         }
     }
+
+    fn divide_by_2(&mut self) {
+        if self.digits.len() == 1 {
+            self.digits[0] >>= 1;
+        } else {
+            for i in 0..self.digits.len()-1 {
+                self.digits[i] >>= 1;
+                let lsb = self.digits[i+1] & 1u32;
+                self.digits[i] |= lsb << 31;
+            }
+            let last = self.digits.len() - 1;
+            self.digits[last] >>= 1;
+            self.remove_leading_zeros();
+        }
+    }
 }
 
 impl<'a> Neg for &'a Int {
@@ -634,5 +649,19 @@ mod tests {
         };
         assert_eq!(&d * e, f);
         assert_eq!(d * Int::from(0), Int::from(0));
+    }
+
+    #[test]
+    fn divide_by_2_test() {
+        let mut a = Int {
+            is_negative: false,
+            digits: vec![0, 1],
+        };
+        let b = Int {
+            is_negative: false,
+            digits: vec![2147483648u32],
+        };
+        a.divide_by_2();
+        assert_eq!(a, b);
     }
 }
