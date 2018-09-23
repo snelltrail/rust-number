@@ -75,6 +75,10 @@ impl UInt {
             self.remove_leading_zeros();
         }
     }
+
+    pub fn is_zero(&self) -> bool {
+        self.digits.len() == 1 && self.digits[0] == 0
+    }
 }
 
 impl<'a> AddAssign<&'a UInt> for UInt {
@@ -571,6 +575,17 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn is_zero_test() {
+        let zero = UInt::from(0);
+        let one = UInt::from(1);
+        let x = UInt::from_str("4294967296").unwrap();
+        assert!(zero.is_zero());
+        assert!(!one.is_zero());
+        assert!(!x.is_zero());
+    }
+
 
     #[test]
     fn ord_test() {
