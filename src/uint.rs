@@ -1,6 +1,6 @@
 use std::cmp::{max, Ordering};
 use std::num::ParseIntError;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 use std::str::FromStr;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -483,6 +483,91 @@ impl<'a> Div<&'a UInt> for u32 {
     }
 }
 
+impl<'a> RemAssign<&'a UInt> for UInt {
+    fn rem_assign(&mut self, other: &UInt) {
+        assert!(*other != UInt::from(0));
+        let self_clone = self.clone();
+        *self = &self_clone - other * (&self_clone / other)
+    }
+}
+
+impl<'a, 'b> Rem<&'b UInt> for &'a UInt {
+    type Output = UInt;
+
+    fn rem(self, other: &UInt) -> UInt {
+        let mut self_clone = self.clone();
+        self_clone %= other;
+        self_clone
+    }
+}
+
+impl<'a> Rem<UInt> for &'a UInt {
+    type Output = UInt;
+
+    fn rem(self, mut other: UInt) -> UInt {
+        other %= self;
+        other
+    }
+}
+
+impl<'a> Rem<&'a UInt> for UInt {
+    type Output = UInt;
+
+    fn rem(mut self, other: &UInt) -> UInt {
+        self %= other;
+        self
+    }
+}
+
+impl Rem<UInt> for UInt {
+    type Output = UInt;
+
+    fn rem(mut self, other: UInt) -> UInt {
+        self %= &other;
+        self
+    }
+}
+
+impl RemAssign<u32> for UInt {
+    fn rem_assign(&mut self, other: u32) {
+        let other = UInt::from(other);
+        *self %= &other;
+    }
+}
+
+impl Rem<u32> for UInt {
+    type Output = UInt;
+
+    fn rem(mut self, other: u32) -> UInt {
+        self %= other;
+        self
+    }
+}
+
+impl<'a> Rem<u32> for &'a UInt {
+    type Output = UInt;
+
+    fn rem(self, other: u32) -> UInt {
+        self.clone() % other
+    }
+}
+
+impl Rem<UInt> for u32 {
+    type Output = UInt;
+
+    fn rem(self, other: UInt) -> UInt {
+        other % self
+    }
+}
+
+impl<'a> Rem<&'a UInt> for u32 {
+    type Output = UInt;
+
+    fn rem(self, other: &UInt) -> UInt {
+        other % self
+    }
+}
+
 impl PartialOrd for UInt {
     fn partial_cmp(&self, other: &UInt) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -745,5 +830,26 @@ mod tests {
         a = &a / 1;
         a = 1 / &a;
         assert_eq!(a, UInt::from(1));
+    }
+
+    #[test]
+    fn rem_large_test() {
+        let a =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
+        let c = UInt::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
+        assert_eq!(&c % &a, UInt::from(0));
+        assert_eq!((&c + UInt::from(1)) % &a, UInt::from(1));
+        assert_eq!((&c - UInt::from(1)) % &a, &a - UInt::from(1));
+    }
+
+    #[test]
+    fn rem_with_u32_test() {
+        let mut a = UInt::from(1);
+        a = 1 / &a;
+        a %= 1;
+        a = &a / 1;
+        assert_eq!(a, UInt::from(0));
     }
 }
