@@ -586,7 +586,6 @@ mod tests {
         assert!(!x.is_zero());
     }
 
-
     #[test]
     fn ord_test() {
         let zero = UInt::from(0);
@@ -638,9 +637,12 @@ mod tests {
         assert_eq!(UInt::from(2) + UInt::from(2), UInt::from(4));
         assert_eq!(&one + &one, two);
 
-        let a = UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
-        let b = UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
-        let c = UInt::from_str("12554203470773361527671578846415332832241604377152797540375").unwrap();
+        let a =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
+        let c =
+            UInt::from_str("12554203470773361527671578846415332832241604377152797540375").unwrap();
         assert_eq!(&a + UInt::from(5), b);
         assert_eq!(&a + &b, c);
 
@@ -659,10 +661,7 @@ mod tests {
             + UInt::from(i32::max_value() as u32)
             + UInt::from(i32::max_value() as u32);
         c -= &UInt::from(1);
-        assert_eq!(
-            c,
-            UInt::from_str("6442450940").unwrap()
-            );
+        assert_eq!(c, UInt::from_str("6442450940").unwrap());
     }
 
     #[test]
@@ -691,8 +690,10 @@ mod tests {
         let c = UInt::from_str("18446744069414584320").unwrap();
         assert_eq!(a * b, c);
 
-        let d = UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
-        let e = UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
+        let d =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let e =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
         let f = UInt::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
         assert_eq!(&d * e, f);
         assert_eq!(d * UInt::from(0), UInt::from(0));
@@ -727,8 +728,10 @@ mod tests {
 
     #[test]
     fn div_large_test() {
-        let a = UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
-        let b = UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
+        let a =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
         let c = UInt::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
         assert_eq!(&c / &a, b);
         assert_eq!((&c + UInt::from(1)) / &a, b);
