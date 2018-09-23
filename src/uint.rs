@@ -125,13 +125,57 @@ impl Add<UInt> for UInt {
     }
 }
 
+impl AddAssign<u32> for UInt {
+    #[inline]
+    fn add_assign(&mut self, other: u32) {
+        // TODO Make this not use heap allocation
+        let other = UInt::from(other);
+        *self += &other;
+    }
+}
+
+impl Add<u32> for UInt {
+    type Output = UInt;
+
+    fn add(mut self, other: u32) -> UInt {
+        self += other;
+        self
+    }
+}
+
+impl<'a> Add<u32> for &'a UInt {
+    type Output = UInt;
+
+    fn add(self, other: u32) -> UInt {
+        self.clone() + other
+    }
+}
+
+impl Add<UInt> for u32 {
+    type Output = UInt;
+
+    fn add(self, other: UInt) -> UInt {
+        other + self
+    }
+}
+
+impl<'a> Add<&'a UInt> for u32 {
+    type Output = UInt;
+
+    fn add(self, other: &UInt) -> UInt {
+        other + self
+    }
+}
+
+
+
 // //TODO: Implement Sub using SubAssign to avoid unnecessary copies
 impl<'a, 'b> Sub<&'b UInt> for &'a UInt {
     type Output = UInt;
 
     fn sub(self, other: &UInt) -> UInt {
         let mut self_clone = self.clone();
-        self_clone -= &other;
+        self_clone -= other;
         self_clone
     }
 }
@@ -186,6 +230,46 @@ impl<'a> SubAssign<&'a UInt> for UInt {
     }
 }
 
+impl SubAssign<u32> for UInt {
+    fn sub_assign(&mut self, other: u32) {
+        let other = UInt::from(other);
+        *self -= &other;
+    }
+}
+
+impl Sub<u32> for UInt {
+    type Output = UInt;
+
+    fn sub(mut self, other: u32) -> UInt {
+        self -= other;
+        self
+    }
+}
+
+impl<'a> Sub<u32> for &'a UInt {
+    type Output = UInt;
+
+    fn sub(self, other: u32) -> UInt {
+        self.clone() - other
+    }
+}
+
+impl Sub<UInt> for u32 {
+    type Output = UInt;
+
+    fn sub(self, other: UInt) -> UInt {
+        other - self
+    }
+}
+
+impl<'a> Sub<&'a UInt> for u32 {
+    type Output = UInt;
+
+    fn sub(self, other: &UInt) -> UInt {
+        other - self
+    }
+}
+
 impl<'a> MulAssign<&'a UInt> for UInt {
     fn mul_assign(&mut self, other: &UInt) {
         let mut res = UInt::from(0);
@@ -233,6 +317,46 @@ impl Mul<UInt> for UInt {
     fn mul(mut self, other: UInt) -> UInt {
         self *= &other;
         self
+    }
+}
+
+impl MulAssign<u32> for UInt {
+    fn mul_assign(&mut self, other: u32) {
+        let other = UInt::from(other);
+        *self *= &other;
+    }
+}
+
+impl Mul<u32> for UInt {
+    type Output = UInt;
+
+    fn mul(mut self, other: u32) -> UInt {
+        self *= other;
+        self
+    }
+}
+
+impl<'a> Mul<u32> for &'a UInt {
+    type Output = UInt;
+
+    fn mul(self, other: u32) -> UInt {
+        self.clone() * other
+    }
+}
+
+impl Mul<UInt> for u32 {
+    type Output = UInt;
+
+    fn mul(self, other: UInt) -> UInt {
+        other * self
+    }
+}
+
+impl<'a> Mul<&'a UInt> for u32 {
+    type Output = UInt;
+
+    fn mul(self, other: &UInt) -> UInt {
+        other * self
     }
 }
 
@@ -299,6 +423,46 @@ impl Div<UInt> for UInt {
     fn div(mut self, other: UInt) -> UInt {
         self /= &other;
         self
+    }
+}
+
+impl DivAssign<u32> for UInt {
+    fn div_assign(&mut self, other: u32) {
+        let other = UInt::from(other);
+        *self /= &other;
+    }
+}
+
+impl Div<u32> for UInt {
+    type Output = UInt;
+
+    fn div(mut self, other: u32) -> UInt {
+        self /= other;
+        self
+    }
+}
+
+impl<'a> Div<u32> for &'a UInt {
+    type Output = UInt;
+
+    fn div(self, other: u32) -> UInt {
+        self.clone() / other
+    }
+}
+
+impl Div<UInt> for u32 {
+    type Output = UInt;
+
+    fn div(self, other: UInt) -> UInt {
+        other / self
+    }
+}
+
+impl<'a> Div<&'a UInt> for u32 {
+    type Output = UInt;
+
+    fn div(self, other: &UInt) -> UInt {
+        other / self
     }
 }
 
@@ -416,6 +580,15 @@ mod tests {
     }
 
     #[test]
+    fn add_with_u32_test() {
+        let mut a = UInt::from(0);
+        a += 0;
+        a = &a + 0;
+        a = 0 + &a;
+        assert_eq!(a, UInt { digits: vec![0] });
+    }
+
+    #[test]
     fn add_test() {
         let zero = UInt::from(0);
         let one = UInt::from(1);
@@ -462,6 +635,15 @@ mod tests {
     }
 
     #[test]
+    fn sub_with_u32_test() {
+        let mut a = UInt::from(0);
+        a -= 0;
+        a = &a - 0;
+        a = 0 - &a;
+        assert_eq!(a, UInt { digits: vec![0] });
+    }
+
+    #[test]
     fn mul_small_test() {
         let zero = UInt::from(0);
         let one = UInt::from(1);
@@ -493,6 +675,15 @@ mod tests {
         };
         assert_eq!(&d * e, f);
         assert_eq!(d * UInt::from(0), UInt::from(0));
+    }
+
+    #[test]
+    fn mul_with_u32_test() {
+        let mut a = UInt::from(0);
+        a *= 0;
+        a = &a * 0;
+        a = 0 * &a;
+        assert_eq!(a, UInt { digits: vec![0] });
     }
 
     #[test]
@@ -529,5 +720,14 @@ mod tests {
         assert_eq!(&c / &a, b);
         assert_eq!((&c + UInt::from(1)) / &a, b);
         assert_eq!((&c - UInt::from(1)) / &a, &b - UInt::from(1));
+    }
+
+    #[test]
+    fn div_with_u32_test() {
+        let mut a = UInt::from(1);
+        a /= 1;
+        a = &a / 1;
+        a = 1 / &a;
+        assert_eq!(a, UInt { digits: vec![1] });
     }
 }
