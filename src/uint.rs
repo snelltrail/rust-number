@@ -142,8 +142,8 @@ impl Add<UInt> for UInt {
 }
 
 impl AddAssign<u32> for UInt {
-    #[inline]
     fn add_assign(&mut self, other: u32) {
+        // TODO Make this not use heap allocation
         let other = UInt::from(other);
         *self += &other;
     }
