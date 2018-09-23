@@ -1,6 +1,6 @@
 use std::cmp::{max, Ordering};
 use std::num::ParseIntError;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Rem, RemAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 use std::str::FromStr;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
