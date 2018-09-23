@@ -1,5 +1,7 @@
 use std::cmp::{max, Ordering};
+use std::num::ParseIntError;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::str::FromStr;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 
@@ -10,6 +12,20 @@ pub struct UInt {
 impl From<u32> for UInt {
     fn from(num: u32) -> Self {
         UInt { digits: vec![num] }
+    }
+}
+
+impl FromStr for UInt {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut res = UInt::from(0);
+        for c in s.chars() {
+            res *= 10;
+            res += c.to_digit(10).unwrap();
+        }
+
+        Ok(res)
     }
 }
 
@@ -126,7 +142,6 @@ impl Add<UInt> for UInt {
 }
 
 impl AddAssign<u32> for UInt {
-    #[inline]
     fn add_assign(&mut self, other: u32) {
         let other = UInt::from(other);
         *self += &other;
@@ -165,8 +180,6 @@ impl<'a> Add<&'a UInt> for u32 {
         other + self
     }
 }
-
-
 
 // //TODO: Implement Sub using SubAssign to avoid unnecessary copies
 impl<'a, 'b> Sub<&'b UInt> for &'a UInt {
@@ -536,6 +549,14 @@ mod tests {
     fn test_from_u32() {
         let two = UInt { digits: vec![2] };
         let hundred = UInt { digits: vec![100] };
+        assert_eq!(two, UInt::from(2));
+        assert_eq!(hundred, UInt::from(100));
+    }
+
+    #[test]
+    fn test_from_str() {
+        let two = UInt::from_str("2").unwrap();
+        let hundred = UInt::from_str("100").unwrap();
         assert_eq!(two, UInt::from(2));
         assert_eq!(hundred, UInt::from(100));
     }
