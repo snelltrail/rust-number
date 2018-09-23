@@ -287,7 +287,7 @@ impl<'a> MulAssign<&'a UInt> for UInt {
     fn mul_assign(&mut self, other: &UInt) {
         let mut res = UInt::from(0);
         for i in 0..other.digits.len() {
-            let mut single_multiplication = multiply_ignoring_sign(self, other.digits[i]);
+            let mut single_multiplication = multiply(self, other.digits[i]);
             single_multiplication.shift_by(i);
             res += &single_multiplication;
         }
@@ -504,7 +504,7 @@ impl Ord for UInt {
     }
 }
 
-fn multiply_ignoring_sign(lhs: &UInt, rhs: u32) -> UInt {
+fn multiply(lhs: &UInt, rhs: u32) -> UInt {
     let mut res = UInt { digits: vec![] };
     let mut carry = 0u32;
     for i in 0..lhs.digits.len() {
