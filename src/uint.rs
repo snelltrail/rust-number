@@ -560,18 +560,23 @@ mod tests {
         let hundred = UInt::from_str("100").unwrap();
         assert_eq!(two, UInt::from(2));
         assert_eq!(hundred, UInt::from(100));
-    }
-
-    #[test]
-    fn uint_works() {
-        assert_eq!(UInt::new(vec![1, 2]), UInt { digits: vec![1, 2] });
+        let a = UInt::from_str("10715086071862673209484250490600018105614048117055336074437503883703510511249361224931983788156958581275946729175531468251871452856923140435984577574698574803934567774824230985421074605062371141877954182153046474983581941267398767559165543946077062914571196477686542167660429831652624386837205668069673").unwrap();
+        assert_eq!(
+            a,
+            UInt {
+                digits: vec![
+                    297, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 256
+                ]
+            }
+        );
     }
 
     #[test]
     fn ord_test() {
-        let zero = UInt { digits: vec![0] };
-        let one = UInt { digits: vec![1] };
-        let hundred = UInt { digits: vec![100] };
+        let zero = UInt::from(0);
+        let one = UInt::from(1);
+        let hundred = UInt::from(100);
         assert!(zero < one);
         assert!(one < hundred);
     }
@@ -597,7 +602,7 @@ mod tests {
     fn add_assign_test() {
         let mut a = UInt::from(0);
         a += &UInt::from(0);
-        assert_eq!(a, UInt { digits: vec![0] });
+        assert_eq!(a, UInt::from(0));
     }
 
     #[test]
@@ -606,7 +611,7 @@ mod tests {
         a += 0;
         a = &a + 0;
         a = 0 + &a;
-        assert_eq!(a, UInt { digits: vec![0] });
+        assert_eq!(a, UInt::from(0));
     }
 
     #[test]
@@ -618,41 +623,31 @@ mod tests {
         assert_eq!(UInt::from(2) + UInt::from(2), UInt::from(4));
         assert_eq!(&one + &one, two);
 
-        let a = UInt {
-            digits: vec![9, 9, 1, 0, 0, 0, 1],
-        };
-        let b = UInt {
-            digits: vec![14, 9, 1, 0, 0, 0, 1],
-        };
-        let c = UInt {
-            digits: vec![23, 18, 2, 0, 0, 0, 2],
-        };
+        let a = UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b = UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
+        let c = UInt::from_str("12554203470773361527671578846415332832241604377152797540375").unwrap();
         assert_eq!(&a + UInt::from(5), b);
         assert_eq!(&a + &b, c);
 
-        let d = UInt {
-            digits: vec![4294967295u32],
-        };
-        let e = UInt { digits: vec![0, 1] };
+        let d = UInt::from(4294967295u32);
+        let e = UInt::from_str("4294967296").unwrap();
         assert_eq!(e, d + UInt::from(1));
     }
 
     #[test]
     fn sub_test() {
         let a = UInt::from(0) - UInt::from(0);
-        assert_eq!(a, UInt { digits: vec![0] });
+        assert_eq!(a, UInt::from(0));
         let b = UInt::from(3) - UInt::from(2);
-        assert_eq!(b, UInt { digits: vec![1] });
+        assert_eq!(b, UInt::from(1));
         let mut c = UInt::from(i32::max_value() as u32)
             + UInt::from(i32::max_value() as u32)
             + UInt::from(i32::max_value() as u32);
         c -= &UInt::from(1);
         assert_eq!(
             c,
-            UInt {
-                digits: vec![2147483644, 1],
-            }
-        );
+            UInt::from_str("6442450940").unwrap()
+            );
     }
 
     #[test]
@@ -661,7 +656,7 @@ mod tests {
         a -= 0;
         a = &a - 0;
         a = 0 - &a;
-        assert_eq!(a, UInt { digits: vec![0] });
+        assert_eq!(a, UInt::from(0));
     }
 
     #[test]
@@ -676,24 +671,14 @@ mod tests {
 
     #[test]
     fn mul_large_test() {
-        let a = UInt {
-            digits: vec![4294967295u32],
-        };
-        let b = UInt { digits: vec![0, 1] };
-        let c = UInt {
-            digits: vec![0, 4294967295u32],
-        };
+        let a = UInt::from(4294967295u32);
+        let b = UInt::from_str("4294967296").unwrap();
+        let c = UInt::from_str("18446744069414584320").unwrap();
         assert_eq!(a * b, c);
 
-        let d = UInt {
-            digits: vec![9, 9, 1, 0, 0, 0, 1],
-        };
-        let e = UInt {
-            digits: vec![14, 9, 1, 0, 0, 0, 1],
-        };
-        let f = UInt {
-            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
-        };
+        let d = UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let e = UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
+        let f = UInt::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
         assert_eq!(&d * e, f);
         assert_eq!(d * UInt::from(0), UInt::from(0));
     }
@@ -704,15 +689,13 @@ mod tests {
         a *= 0;
         a = &a * 0;
         a = 0 * &a;
-        assert_eq!(a, UInt { digits: vec![0] });
+        assert_eq!(a, UInt::from(0));
     }
 
     #[test]
     fn divide_by_2_test() {
-        let mut a = UInt { digits: vec![0, 1] };
-        let b = UInt {
-            digits: vec![2147483648u32],
-        };
+        let mut a = UInt::from_str("4294967296").unwrap();
+        let b = UInt::from(2147483648u32);
         a.divide_by_2();
         assert_eq!(a, b);
     }
@@ -729,15 +712,9 @@ mod tests {
 
     #[test]
     fn div_large_test() {
-        let a = UInt {
-            digits: vec![9, 9, 1, 0, 0, 0, 1],
-        };
-        let b = UInt {
-            digits: vec![14, 9, 1, 0, 0, 0, 1],
-        };
-        let c = UInt {
-            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
-        };
+        let a = UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b = UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
+        let c = UInt::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
         assert_eq!(&c / &a, b);
         assert_eq!((&c + UInt::from(1)) / &a, b);
         assert_eq!((&c - UInt::from(1)) / &a, &b - UInt::from(1));
@@ -749,6 +726,6 @@ mod tests {
         a /= 1;
         a = &a / 1;
         a = 1 / &a;
-        assert_eq!(a, UInt { digits: vec![1] });
+        assert_eq!(a, UInt::from(1));
     }
 }
