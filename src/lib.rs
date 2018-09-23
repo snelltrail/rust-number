@@ -15,7 +15,7 @@ mod tests {
     use test::Bencher;
 
     #[bench]
-    fn bench_add_two(b: &mut Bencher) {
+    fn bench_add(b: &mut Bencher) {
         b.iter(|| {
             let mut a = uint::UInt::from(450);
             a *= &a.clone();
