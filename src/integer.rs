@@ -244,89 +244,82 @@ impl <'a> AddAssign<&'a Int> for Int {
 //    }
 //}
 //
-//impl<'a, 'b> Add<&'b Int> for &'a Int {
-//    type Output = Int;
-//
-//    fn add(self, other: &Int) -> Int {
-//        let mut self_clone = self.clone();
-//        self_clone += other;
-//        self_clone
-//    }
-//}
-//
-//impl<'a> Add<Int> for &'a Int {
-//    type Output = Int;
-//
-//    fn add(self, mut other: Int) -> Int {
-//        other += self;
-//        other
-//    }
-//}
-//
-//impl<'a> Add<&'a Int> for Int {
-//    type Output = Int;
-//
-//    fn add(mut self, other: &Int) -> Int {
-//        self += other;
-//        self
-//    }
-//}
-//
-//impl Add<Int> for Int {
-//    type Output = Int;
-//
-//    fn add(mut self, other: Int) -> Int {
-//        self += &other;
-//        self
-//    }
-//}
-//
+impl<'a, 'b> Add<&'b Int> for &'a Int {
+    type Output = Int;
+
+    fn add(self, other: &Int) -> Int {
+        let mut self_clone = self.clone();
+        self_clone += other;
+        self_clone
+    }
+}
+
+impl<'a> Add<Int> for &'a Int {
+    type Output = Int;
+
+    fn add(self, mut other: Int) -> Int {
+        other += self;
+        other
+    }
+}
+
+impl<'a> Add<&'a Int> for Int {
+    type Output = Int;
+
+    fn add(mut self, other: &Int) -> Int {
+        self += other;
+        self
+    }
+}
+
+impl Add<Int> for Int {
+    type Output = Int;
+
+    fn add(mut self, other: Int) -> Int {
+        self += &other;
+        self
+    }
+}
+
 ////TODO: Implement Sub using SubAssign to avoid unnecessary copies
-//impl<'a, 'b> Sub<&'b Int> for &'a Int {
-//    type Output = Int;
-//
-//    fn sub(self, other: &Int) -> Int {
-//        self + (-other)
-//    }
-//}
-//
-//impl<'a> Sub<Int> for &'a Int {
-//    type Output = Int;
-//
-//    fn sub(self, other: Int) -> Int {
-//        self + (-other)
-//    }
-//}
-//
-//impl<'a> Sub<&'a Int> for Int {
-//    type Output = Int;
-//
-//    fn sub(self, other: &Int) -> Int {
-//        self + (-other)
-//    }
-//}
-//
-//impl Sub<Int> for Int {
-//    type Output = Int;
-//
-//    fn sub(self, other: Int) -> Int {
-//        self + (-other)
-//    }
-//}
-//
-//impl SubAssign for Int {
-//    fn sub_assign(&mut self, other: Int) {
-//        if self.is_negative || other.is_negative || match compare_in_magnitude(self, &other) {
-//            Ordering::Less => true,
-//            Ordering::Equal => false,
-//            Ordering::Greater => false,
-//        } {
-//            unimplemented!();
-//        }
-//        self.subtract_ignoring_sign(&other);
-//    }
-//}
-//
+impl<'a, 'b> Sub<&'b Int> for &'a Int {
+    type Output = Int;
+
+    fn sub(self, other: &Int) -> Int {
+        self + (-other)
+    }
+}
+
+impl<'a> Sub<Int> for &'a Int {
+    type Output = Int;
+
+    fn sub(self, other: Int) -> Int {
+        self + (-other)
+    }
+}
+
+impl<'a> Sub<&'a Int> for Int {
+    type Output = Int;
+
+    fn sub(self, other: &Int) -> Int {
+        self + (-other)
+    }
+}
+
+impl Sub<Int> for Int {
+    type Output = Int;
+
+    fn sub(self, other: Int) -> Int {
+        self + (-other)
+    }
+}
+
+impl <'a> SubAssign<&'a Int> for Int {
+    fn sub_assign(&mut self, other: &Int) {
+        *self = self.clone() - other;
+    }
+}
+
 //impl<'a> MulAssign<&'a Int> for Int {
 //    fn mul_assign(&mut self, other: &Int) {
 //        let mut res = Int::from(0);
@@ -667,8 +660,34 @@ mod tests {
         assert_eq!(&negative_two + &one, negative_one);
         assert_eq!(&negative_one + &negative_one, negative_two);
         assert_eq!(&negative_one + &negative_two, negative_three);
-        assert_eq!(&negative_one + &negative_two, negative_three);
         assert_eq!(&negative_two + &negative_one, negative_three);
+    }
+     #[test]
+    fn sub_test() {
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let two = Int::from(2);
+        let three = Int::from(3);
+        let negative_two = Int::from(-2);
+        let negative_one = Int::from(-1);
+        let negative_three = Int::from(-3);
+        assert_eq!(&zero - &zero, zero);
+        assert_eq!(&zero - &one, negative_one);
+        assert_eq!(&zero - &negative_one, one);
+        assert_eq!(&one - &zero, one);
+        assert_eq!(&one - &one, zero);
+        assert_eq!(&one - &two, negative_one);
+        assert_eq!(&two - &one, one);
+        assert_eq!(&one - &negative_one, two);
+        assert_eq!(&one - &negative_two, three);
+        assert_eq!(&two - &negative_one, three);
+        assert_eq!(&negative_one - &zero, negative_one);
+        assert_eq!(&negative_one - &one, negative_two);
+        assert_eq!(&negative_one - &two, negative_three);
+        assert_eq!(&negative_two - &one, negative_three);
+        assert_eq!(&negative_one - &negative_one, zero);
+        assert_eq!(&negative_one - &negative_two, one);
+        assert_eq!(&negative_two - &negative_one, negative_one);
     }
         
 //    #[test]
