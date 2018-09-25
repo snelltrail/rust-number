@@ -187,23 +187,31 @@ impl <'a> AddAssign<&'a Int> for Int {
                 self.magnitude += &other.magnitude;
             } else {
                 assert!(other.sign == Sign::Negative);
-                // Need to compare these in magnitude
                 match self.magnitude.cmp(&other.magnitude) {
                     Ordering::Equal => *self = Int::from(0),
                     Ordering::Greater => self.magnitude -= &other.magnitude,
                     Ordering::Less => {
-                        self.magnitude -= &other.magnitude;
-                        self.sign = Sign::Negative;
+                        let mut temp = other.clone();
+                        temp.magnitude -= &self.magnitude;
+                        *self = temp;
                     }
                 }
             }
         } else {
-            assert(self.sign == Sign::Negative);
+            assert!(self.sign == Sign::Negative);
             if other.sign == Sign::Zero || other.sign == Sign::Negative {
                 self.magnitude += &other.magnitude;
             } else {
                 assert!(other.sign == Sign::Positive);
-
+                match self.magnitude.cmp(&other.magnitude) {
+                    Ordering::Equal => *self = Int::from(0),
+                    Ordering::Greater => self.magnitude -= &other.magnitude,
+                    Ordering::Less => {
+                        let mut temp = other.clone();
+                        temp.magnitude -= &self.magnitude;
+                        *self = temp;
+                    }
+                }
             }
         }
     }
@@ -634,6 +642,35 @@ mod tests {
         );
     }
 
+    #[test]
+    fn add_test() {
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let two = Int::from(2);
+        let three = Int::from(3);
+        let negative_two = Int::from(-2);
+        let negative_one = Int::from(-1);
+        let negative_three = Int::from(-3);
+        assert_eq!(&zero + &zero, zero);
+        assert_eq!(&zero + &one, one);
+        assert_eq!(&zero + &negative_one, negative_one);
+        assert_eq!(&one + &zero, one);
+        assert_eq!(&one + &one, two);
+        assert_eq!(&one + &two, three);
+        assert_eq!(&two + &one, three);
+        assert_eq!(&one + &negative_one, zero);
+        assert_eq!(&one + &negative_two, negative_one);
+        assert_eq!(&two + &negative_one, one);
+        assert_eq!(&negative_one + &zero, negative_one);
+        assert_eq!(&negative_one + &one, zero);
+        assert_eq!(&negative_one + &two, one);
+        assert_eq!(&negative_two + &one, negative_one);
+        assert_eq!(&negative_one + &negative_one, negative_two);
+        assert_eq!(&negative_one + &negative_two, negative_three);
+        assert_eq!(&negative_one + &negative_two, negative_three);
+        assert_eq!(&negative_two + &negative_one, negative_three);
+    }
+        
 //    #[test]
 //    fn add_test() {
 //        let negative_two = Int::from(-2);
