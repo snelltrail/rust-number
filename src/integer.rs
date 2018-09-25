@@ -178,6 +178,37 @@ impl Neg for Int {
     }
 }
 
+impl <'a> AddAssign<&'a Int> for Int {
+    fn add_assign(&mut self, other: &Int) {
+        if self.sign == Sign::Zero {
+            *self = other.clone();
+        } else if self.sign == Sign::Positive {
+            if other.sign == Sign::Zero || other.sign == Sign::Positive {
+                self.magnitude += &other.magnitude;
+            } else {
+                assert!(other.sign == Sign::Negative);
+                // Need to compare these in magnitude
+                match self.magnitude.cmp(&other.magnitude) {
+                    Ordering::Equal => *self = Int::from(0),
+                    Ordering::Greater => self.magnitude -= &other.magnitude,
+                    Ordering::Less => {
+                        self.magnitude -= &other.magnitude;
+                        self.sign = Sign::Negative;
+                    }
+                }
+            }
+        } else {
+            assert(self.sign == Sign::Negative);
+            if other.sign == Sign::Zero || other.sign == Sign::Negative {
+                self.magnitude += &other.magnitude;
+            } else {
+                assert!(other.sign == Sign::Positive);
+
+            }
+        }
+    }
+}
+
 //impl<'a> AddAssign<&'a Int> for Int {
 //    fn add_assign(&mut self, other: &Int) {
 //        if !self.is_negative && !other.is_negative {
@@ -446,9 +477,9 @@ impl Neg for Int {
 //}
 //
 //fn compare_in_magnitude(lhs: &Int, rhs: &Int) -> Ordering {
-//    if lhs.digits.len() < rhs.digits.len() {
+//    if lhs.magnitude.digits.len() < rhs.magnitude.digits.len() {
 //        Ordering::Less
-//    } else if lhs.digits.len() > rhs.digits.len() {
+//    } else if lhs.magnitude.digits.len() > rhs.magnitude.digits.len() {
 //        Ordering::Greater
 //    } else {
 //        for i in (0..lhs.digits.len()).rev() {
@@ -461,7 +492,7 @@ impl Neg for Int {
 //        Ordering::Equal
 //    }
 //}
-//
+
 //fn add_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
 //    assert!(carry == 1 || carry == 0);
 //    let big_x = x as u64;
@@ -587,19 +618,22 @@ mod tests {
 //        assert_eq!(add_with_carry(u32::max_value(), 11, 0), (10, 1));
 //    }
 //
-//    #[test]
-//    fn add_assign_test() {
-//        let mut a = Int::from(0);
-//        a += &Int::from(0);
-//        assert_eq!(
-//            a,
-//            Int {
-//                is_negative: false,
-//                digits: vec![0],
-//            }
-//        );
-//    }
-//
+    #[test]
+    fn add_assign_test() {
+        let mut a = Int::from(0);
+        a += &Int::from(0);
+        assert_eq!(
+            a,
+            Int::from(0),
+        );
+        let mut b = Int::from(3);
+        b += &Int::from(-2);
+        assert_eq!(
+            b,
+            Int::from(1),
+        );
+    }
+
 //    #[test]
 //    fn add_test() {
 //        let negative_two = Int::from(-2);
