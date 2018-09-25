@@ -1,7 +1,9 @@
 use std::cmp::{max, Ordering};
+use std::num::ParseIntError;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::str::FromStr;
 
-use uint::{UInt}; 
+use uint::UInt;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum Sign {
@@ -19,16 +21,40 @@ pub struct Int {
 impl From<i32> for Int {
     fn from(num: i32) -> Self {
         Int {
-            magnitude : UInt::from(abs(num)),
-            sign : if num == 0 { Sign::Zero } 
-                   else if num > 0 { Sign::Positive }
-                   else { Sign::Negative }
+            magnitude: UInt::from(abs(num)),
+            sign: if num == 0 {
+                Sign::Zero
+            } else if num > 0 {
+                Sign::Positive
+            } else {
+                Sign::Negative
+            },
         }
     }
 }
 
-impl Int {
+impl FromStr for Int {
+    type Err = ParseIntError;
 
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let first_char = s.chars().next().unwrap();
+        let is_negative = first_char == '-';
+        Ok(Int {
+            magnitude: if is_negative {
+                UInt::from_str(&s[1..]).unwrap()
+            } else {
+                UInt::from_str(s).unwrap()
+            },
+            sign: match first_char {
+                '-' => Sign::Negative,
+                '0' if s.len() == 1 => Sign::Zero,
+                _ => Sign::Positive,
+            },
+        })
+    }
+}
+
+impl Int {
     //TODO Should this be deleted?
     // pub fn new(is_negative: bool, digits: Vec<u32>) -> Int {
     //     Int {
@@ -37,124 +63,124 @@ impl Int {
     //     }
     // }
 
-//    pub fn add_ignoring_sign(&mut self, rhs: &Int) {
-//        let mut carry: u32 = 0;
-//        let mut i = 0;
-//        while i < max(self.digits.len(), rhs.digits.len()) || carry != 0 {
-//            // Make sure that self.digits is big enough to store the next digit
-//            if i >= self.digits.len() {
-//                self.digits.push(0);
-//                assert_eq!(i, self.digits.len() - 1);
-//            }
-//
-//            let (next_digit, next_carry) = add_with_carry(
-//                self.digits[i],
-//                if i < rhs.digits.len() {
-//                    rhs.digits[i]
-//                } else {
-//                    0
-//                },
-//                carry,
-//            );
-//            self.digits[i] = next_digit;
-//            carry = next_carry;
-//            i += 1;
-//        }
-//    }
-//
-//    fn remove_leading_zeros(&mut self) {
-//        while self.digits.len() > 1 && *self.digits.last().unwrap() == 0u32 {
-//            self.digits.pop();
-//        }
-//    }
-//
-//    fn borrow_from_neighbour(&mut self, neighbour: usize) {
-//        assert!(neighbour < self.digits.len());
-//        let mut curr = neighbour;
-//        while self.digits[curr] == 0 {
-//            self.digits[curr] = u32::max_value();
-//            curr += 1;
-//            assert!(curr < self.digits.len());
-//        }
-//        self.digits[curr] -= 1;
-//    }
-//
-//    fn subtract_ignoring_sign(&mut self, rhs: &Int) {
-//        assert!(match compare_in_magnitude(self, rhs) {
-//            Ordering::Less => false,
-//            Ordering::Equal => true,
-//            Ordering::Greater => true,
-//        });
-//        for i in 0..self.digits.len() {
-//            let curr_rhs_digit = match rhs.digits.get(i) {
-//                Some(x) => x,
-//                None => &0u32,
-//            };
-//            if self.digits[i] < *curr_rhs_digit {
-//                self.borrow_from_neighbour(i + 1);
-//            }
-//            if *curr_rhs_digit <= self.digits[i] {
-//                // Check for underflow.
-//                self.digits[i] -= *curr_rhs_digit;
-//            } else {
-//                self.digits[i] = ((u32::max_value() - curr_rhs_digit) + self.digits[i]) + 1;
-//            }
-//        }
-//        self.remove_leading_zeros();
-//    }
-//
-//    fn shift_by(&mut self, i: usize) {
-//        if *self != Int::from(0) {
-//            for _ in 0..i {
-//                // TODO: This can be implemented more efficiently by adding zeros to the
-//                // end and rotating.
-//                self.digits.insert(0, 0);
-//            }
-//        }
-//    }
-//
-//    fn divide_by_2(&mut self) {
-//        if self.digits.len() == 1 {
-//            self.digits[0] >>= 1;
-//        } else {
-//            for i in 0..self.digits.len() - 1 {
-//                self.digits[i] >>= 1;
-//                let lsb = self.digits[i + 1] & 1u32;
-//                self.digits[i] |= lsb << 31;
-//            }
-//            let last = self.digits.len() - 1;
-//            self.digits[last] >>= 1;
-//            self.remove_leading_zeros();
-//        }
-//    }
-//
-//    fn divide_ignoring_sign(&mut self, denom: &Int) {
-//        // Assumes self is nonnegative and denom is positive.
-//        assert!(*denom != Int::from(0));
-//        if *self < *denom {
-//            *self = Int::from(0);
-//        } else {
-//            let mut lo = Int::from(0);
-//            let mut hi = Int::from(1);
-//            hi.shift_by(self.digits.len() - denom.digits.len() + 1);
-//            let mut res = Int::from(0);
-//            while lo <= hi {
-//                let mut mid = &lo + &hi;
-//                mid.divide_by_2();
-//                let mid_times_denom = &mid * denom;
-//                if mid_times_denom == *self {
-//                    *self = mid;
-//                    return;
-//                } else if *self < mid_times_denom {
-//                    hi = mid - Int::from(1);
-//                } else {
-//                    lo = &mid + Int::from(1);
-//                    res = mid;
-//                }
-//            }
-//            *self = res;
-//        }
-//    }
+    //    pub fn add_ignoring_sign(&mut self, rhs: &Int) {
+    //        let mut carry: u32 = 0;
+    //        let mut i = 0;
+    //        while i < max(self.digits.len(), rhs.digits.len()) || carry != 0 {
+    //            // Make sure that self.digits is big enough to store the next digit
+    //            if i >= self.digits.len() {
+    //                self.digits.push(0);
+    //                assert_eq!(i, self.digits.len() - 1);
+    //            }
+    //
+    //            let (next_digit, next_carry) = add_with_carry(
+    //                self.digits[i],
+    //                if i < rhs.digits.len() {
+    //                    rhs.digits[i]
+    //                } else {
+    //                    0
+    //                },
+    //                carry,
+    //            );
+    //            self.digits[i] = next_digit;
+    //            carry = next_carry;
+    //            i += 1;
+    //        }
+    //    }
+    //
+    //    fn remove_leading_zeros(&mut self) {
+    //        while self.digits.len() > 1 && *self.digits.last().unwrap() == 0u32 {
+    //            self.digits.pop();
+    //        }
+    //    }
+    //
+    //    fn borrow_from_neighbour(&mut self, neighbour: usize) {
+    //        assert!(neighbour < self.digits.len());
+    //        let mut curr = neighbour;
+    //        while self.digits[curr] == 0 {
+    //            self.digits[curr] = u32::max_value();
+    //            curr += 1;
+    //            assert!(curr < self.digits.len());
+    //        }
+    //        self.digits[curr] -= 1;
+    //    }
+    //
+    //    fn subtract_ignoring_sign(&mut self, rhs: &Int) {
+    //        assert!(match compare_in_magnitude(self, rhs) {
+    //            Ordering::Less => false,
+    //            Ordering::Equal => true,
+    //            Ordering::Greater => true,
+    //        });
+    //        for i in 0..self.digits.len() {
+    //            let curr_rhs_digit = match rhs.digits.get(i) {
+    //                Some(x) => x,
+    //                None => &0u32,
+    //            };
+    //            if self.digits[i] < *curr_rhs_digit {
+    //                self.borrow_from_neighbour(i + 1);
+    //            }
+    //            if *curr_rhs_digit <= self.digits[i] {
+    //                // Check for underflow.
+    //                self.digits[i] -= *curr_rhs_digit;
+    //            } else {
+    //                self.digits[i] = ((u32::max_value() - curr_rhs_digit) + self.digits[i]) + 1;
+    //            }
+    //        }
+    //        self.remove_leading_zeros();
+    //    }
+    //
+    //    fn shift_by(&mut self, i: usize) {
+    //        if *self != Int::from(0) {
+    //            for _ in 0..i {
+    //                // TODO: This can be implemented more efficiently by adding zeros to the
+    //                // end and rotating.
+    //                self.digits.insert(0, 0);
+    //            }
+    //        }
+    //    }
+    //
+    //    fn divide_by_2(&mut self) {
+    //        if self.digits.len() == 1 {
+    //            self.digits[0] >>= 1;
+    //        } else {
+    //            for i in 0..self.digits.len() - 1 {
+    //                self.digits[i] >>= 1;
+    //                let lsb = self.digits[i + 1] & 1u32;
+    //                self.digits[i] |= lsb << 31;
+    //            }
+    //            let last = self.digits.len() - 1;
+    //            self.digits[last] >>= 1;
+    //            self.remove_leading_zeros();
+    //        }
+    //    }
+    //
+    //    fn divide_ignoring_sign(&mut self, denom: &Int) {
+    //        // Assumes self is nonnegative and denom is positive.
+    //        assert!(*denom != Int::from(0));
+    //        if *self < *denom {
+    //            *self = Int::from(0);
+    //        } else {
+    //            let mut lo = Int::from(0);
+    //            let mut hi = Int::from(1);
+    //            hi.shift_by(self.digits.len() - denom.digits.len() + 1);
+    //            let mut res = Int::from(0);
+    //            while lo <= hi {
+    //                let mut mid = &lo + &hi;
+    //                mid.divide_by_2();
+    //                let mid_times_denom = &mid * denom;
+    //                if mid_times_denom == *self {
+    //                    *self = mid;
+    //                    return;
+    //                } else if *self < mid_times_denom {
+    //                    hi = mid - Int::from(1);
+    //                } else {
+    //                    lo = &mid + Int::from(1);
+    //                    res = mid;
+    //                }
+    //            }
+    //            *self = res;
+    //        }
+    //    }
 }
 
 impl<'a> Neg for &'a Int {
@@ -178,7 +204,7 @@ impl Neg for Int {
     }
 }
 
-impl <'a> AddAssign<&'a Int> for Int {
+impl<'a> AddAssign<&'a Int> for Int {
     fn add_assign(&mut self, other: &Int) {
         if self.sign == Sign::Zero {
             *self = other.clone();
@@ -314,7 +340,7 @@ impl Sub<Int> for Int {
     }
 }
 
-impl <'a> SubAssign<&'a Int> for Int {
+impl<'a> SubAssign<&'a Int> for Int {
     fn sub_assign(&mut self, other: &Int) {
         *self = self.clone() - other;
     }
@@ -567,89 +593,89 @@ mod tests {
         let negative_hundred = Int {
             magnitude: UInt::from(100),
             sign: Sign::Negative,
-
         };
         assert_eq!(two, Int::from(2));
         assert_eq!(negative_hundred, Int::from(-100));
     }
 
-//    #[test]
-//    fn int_works() {
-//        assert_eq!(
-//            Int::new(true, vec![1, 2]),
-//            Int {
-//                is_negative: true,
-//                digits: vec![1, 2],
-//            }
-//        );
-//    }
-//
-//    #[test]
-//    fn abs_test() {
-//        assert_eq!(abs(-2), 2);
-//        assert_eq!(abs(0), 0);
-//        assert_eq!(abs(i32::min_value()), i32::max_value() as u32 + 1);
-//    }
-//
-//    #[test]
-//    fn ord_test() {
-//        let negative_hundred = Int {
-//            is_negative: true,
-//            digits: vec![100],
-//        };
-//        let negative_one = Int {
-//            is_negative: true,
-//            digits: vec![1],
-//        };
-//        let zero = Int {
-//            is_negative: false,
-//            digits: vec![0],
-//        };
-//        let one = Int {
-//            is_negative: false,
-//            digits: vec![1],
-//        };
-//        let hundred = Int {
-//            is_negative: false,
-//            digits: vec![100],
-//        };
-//        assert!(negative_hundred < negative_one);
-//        assert!(negative_one < zero);
-//        assert!(zero < one);
-//        assert!(one < hundred);
-//    }
-//
-//    #[test]
-//    fn add_with_carry_test() {
-//        assert_eq!(add_with_carry(0, 0, 0), (0, 0));
-//        assert_eq!(add_with_carry(1, 1, 1), (3, 0));
-//        assert_eq!(
-//            add_with_carry(u32::max_value() - 1, 1, 0),
-//            (u32::max_value(), 0)
-//        );
-//        assert_eq!(
-//            add_with_carry(u32::max_value() - 1, 0, 1),
-//            (u32::max_value(), 0)
-//        );
-//        assert_eq!(add_with_carry(u32::max_value(), 1, 0), (0, 1));
-//        assert_eq!(add_with_carry(u32::max_value(), 0, 1), (0, 1));
-//        assert_eq!(add_with_carry(u32::max_value(), 11, 0), (10, 1));
-//    }
-//
+    #[test]
+    fn from_str_test() {
+        assert_eq!(Int::from(1), Int::from_str("1").unwrap());
+        assert_eq!(Int::from(0), Int::from_str("0").unwrap());
+        assert_eq!(Int::from(-1), Int::from_str("-1").unwrap());
+    }
+
+    //    #[test]
+    //    fn int_works() {
+    //        assert_eq!(
+    //            Int::new(true, vec![1, 2]),
+    //            Int {
+    //                is_negative: true,
+    //                digits: vec![1, 2],
+    //            }
+    //        );
+    //    }
+    //
+    //    #[test]
+    //    fn abs_test() {
+    //        assert_eq!(abs(-2), 2);
+    //        assert_eq!(abs(0), 0);
+    //        assert_eq!(abs(i32::min_value()), i32::max_value() as u32 + 1);
+    //    }
+    //
+    //    #[test]
+    //    fn ord_test() {
+    //        let negative_hundred = Int {
+    //            is_negative: true,
+    //            digits: vec![100],
+    //        };
+    //        let negative_one = Int {
+    //            is_negative: true,
+    //            digits: vec![1],
+    //        };
+    //        let zero = Int {
+    //            is_negative: false,
+    //            digits: vec![0],
+    //        };
+    //        let one = Int {
+    //            is_negative: false,
+    //            digits: vec![1],
+    //        };
+    //        let hundred = Int {
+    //            is_negative: false,
+    //            digits: vec![100],
+    //        };
+    //        assert!(negative_hundred < negative_one);
+    //        assert!(negative_one < zero);
+    //        assert!(zero < one);
+    //        assert!(one < hundred);
+    //    }
+    //
+    //    #[test]
+    //    fn add_with_carry_test() {
+    //        assert_eq!(add_with_carry(0, 0, 0), (0, 0));
+    //        assert_eq!(add_with_carry(1, 1, 1), (3, 0));
+    //        assert_eq!(
+    //            add_with_carry(u32::max_value() - 1, 1, 0),
+    //            (u32::max_value(), 0)
+    //        );
+    //        assert_eq!(
+    //            add_with_carry(u32::max_value() - 1, 0, 1),
+    //            (u32::max_value(), 0)
+    //        );
+    //        assert_eq!(add_with_carry(u32::max_value(), 1, 0), (0, 1));
+    //        assert_eq!(add_with_carry(u32::max_value(), 0, 1), (0, 1));
+    //        assert_eq!(add_with_carry(u32::max_value(), 11, 0), (10, 1));
+    //    }
+    //
     #[test]
     fn add_assign_test() {
         let mut a = Int::from(0);
         a += &Int::from(0);
-        assert_eq!(
-            a,
-            Int::from(0),
-        );
+        assert_eq!(a, Int::from(0),);
         let mut b = Int::from(3);
         b += &Int::from(-2);
-        assert_eq!(
-            b,
-            Int::from(1),
-        );
+        assert_eq!(b, Int::from(1),);
     }
 
     #[test]
@@ -679,7 +705,7 @@ mod tests {
         assert_eq!(&negative_one + &negative_two, negative_three);
         assert_eq!(&negative_two + &negative_one, negative_three);
     }
-     #[test]
+    #[test]
     fn sub_test() {
         let zero = Int::from(0);
         let one = Int::from(1);
@@ -706,61 +732,61 @@ mod tests {
         assert_eq!(&negative_one - &negative_two, one);
         assert_eq!(&negative_two - &negative_one, negative_one);
     }
-        
-//    #[test]
-//    fn add_test() {
-//        let negative_two = Int::from(-2);
-//        let negative_one = Int::from(-1);
-//        let zero = Int::from(0);
-//        let one = Int::from(1);
-//        let two = Int::from(2);
-//        assert_eq!(&negative_two + &one, negative_one);
-//        assert_eq!(&negative_two + &two, zero);
-//        assert_eq!(&zero + &zero, zero);
-//        assert_eq!(Int::from(2) + Int::from(-2), Int::from(0));
-//        assert_eq!(&one + &one, two);
-//
-//        let a = Int {
-//            is_negative: false,
-//            digits: vec![9, 9, 1, 0, 0, 0, 1],
-//        };
-//        let minus_a = Int {
-//            is_negative: true,
-//            digits: vec![9, 9, 1, 0, 0, 0, 1],
-//        };
-//        let b = Int {
-//            is_negative: false,
-//            digits: vec![14, 9, 1, 0, 0, 0, 1],
-//        };
-//        let minus_b = Int {
-//            is_negative: true,
-//            digits: vec![14, 9, 1, 0, 0, 0, 1],
-//        };
-//        let c = Int {
-//            is_negative: false,
-//            digits: vec![23, 18, 2, 0, 0, 0, 2],
-//        };
-//        let minus_c = Int {
-//            is_negative: true,
-//            digits: vec![23, 18, 2, 0, 0, 0, 2],
-//        };
-//        assert_eq!(&a + &minus_a, zero);
-//        assert_eq!(&a + Int::from(5), b);
-//        assert_eq!(&a + &b, c);
-//        assert_eq!(&a + &minus_b, Int::from(-5));
-//        assert_eq!(&a + &minus_c, minus_b);
-//
-//        let d = Int {
-//            is_negative: false,
-//            digits: vec![4294967295u32],
-//        };
-//        let e = Int {
-//            is_negative: false,
-//            digits: vec![0, 1],
-//        };
-//        assert_eq!(&e + &negative_one, d);
-//    }
-//
+
+    //    #[test]
+    //    fn add_test() {
+    //        let negative_two = Int::from(-2);
+    //        let negative_one = Int::from(-1);
+    //        let zero = Int::from(0);
+    //        let one = Int::from(1);
+    //        let two = Int::from(2);
+    //        assert_eq!(&negative_two + &one, negative_one);
+    //        assert_eq!(&negative_two + &two, zero);
+    //        assert_eq!(&zero + &zero, zero);
+    //        assert_eq!(Int::from(2) + Int::from(-2), Int::from(0));
+    //        assert_eq!(&one + &one, two);
+    //
+    //        let a = Int {
+    //            is_negative: false,
+    //            digits: vec![9, 9, 1, 0, 0, 0, 1],
+    //        };
+    //        let minus_a = Int {
+    //            is_negative: true,
+    //            digits: vec![9, 9, 1, 0, 0, 0, 1],
+    //        };
+    //        let b = Int {
+    //            is_negative: false,
+    //            digits: vec![14, 9, 1, 0, 0, 0, 1],
+    //        };
+    //        let minus_b = Int {
+    //            is_negative: true,
+    //            digits: vec![14, 9, 1, 0, 0, 0, 1],
+    //        };
+    //        let c = Int {
+    //            is_negative: false,
+    //            digits: vec![23, 18, 2, 0, 0, 0, 2],
+    //        };
+    //        let minus_c = Int {
+    //            is_negative: true,
+    //            digits: vec![23, 18, 2, 0, 0, 0, 2],
+    //        };
+    //        assert_eq!(&a + &minus_a, zero);
+    //        assert_eq!(&a + Int::from(5), b);
+    //        assert_eq!(&a + &b, c);
+    //        assert_eq!(&a + &minus_b, Int::from(-5));
+    //        assert_eq!(&a + &minus_c, minus_b);
+    //
+    //        let d = Int {
+    //            is_negative: false,
+    //            digits: vec![4294967295u32],
+    //        };
+    //        let e = Int {
+    //            is_negative: false,
+    //            digits: vec![0, 1],
+    //        };
+    //        assert_eq!(&e + &negative_one, d);
+    //    }
+    //
     #[test]
     fn neg_test() {
         let zero = Int::from(0);
@@ -769,36 +795,36 @@ mod tests {
         assert_eq!(-one, Int::from(-1));
     }
 
-//    #[test]
-//    fn sub_test() {
-//        let a = Int::from(0) - Int::from(0);
-//        assert_eq!(
-//            a,
-//            Int {
-//                is_negative: false,
-//                digits: vec![0],
-//            }
-//        );
-//        let b = Int::from(3) - Int::from(2);
-//        assert_eq!(
-//            b,
-//            Int {
-//                is_negative: false,
-//                digits: vec![1],
-//            }
-//        );
-//        let mut c =
-//            Int::from(i32::max_value()) + Int::from(i32::max_value()) + Int::from(i32::max_value());
-//        c -= Int::from(1);
-//        assert_eq!(
-//            c,
-//            Int {
-//                is_negative: false,
-//                digits: vec![2147483644, 1],
-//            }
-//        );
-//    }
-//
+    //    #[test]
+    //    fn sub_test() {
+    //        let a = Int::from(0) - Int::from(0);
+    //        assert_eq!(
+    //            a,
+    //            Int {
+    //                is_negative: false,
+    //                digits: vec![0],
+    //            }
+    //        );
+    //        let b = Int::from(3) - Int::from(2);
+    //        assert_eq!(
+    //            b,
+    //            Int {
+    //                is_negative: false,
+    //                digits: vec![1],
+    //            }
+    //        );
+    //        let mut c =
+    //            Int::from(i32::max_value()) + Int::from(i32::max_value()) + Int::from(i32::max_value());
+    //        c -= Int::from(1);
+    //        assert_eq!(
+    //            c,
+    //            Int {
+    //                is_negative: false,
+    //                digits: vec![2147483644, 1],
+    //            }
+    //        );
+    //    }
+    //
     #[test]
     fn mul_small_test() {
         let negative_two = Int::from(-2);
@@ -814,82 +840,82 @@ mod tests {
         //assert_eq!(&one * &two, two);
     }
 
-//    #[test]
-//    fn mul_large_test() {
-//        let a = Int {
-//            is_negative: false,
-//            digits: vec![4294967295u32],
-//        };
-//        let b = Int {
-//            is_negative: false,
-//            digits: vec![0, 1],
-//        };
-//        let c = Int {
-//            is_negative: false,
-//            digits: vec![0, 4294967295u32],
-//        };
-//        assert_eq!(a * b, c);
-//
-//        let d = Int {
-//            is_negative: false,
-//            digits: vec![9, 9, 1, 0, 0, 0, 1],
-//        };
-//        let e = Int {
-//            is_negative: false,
-//            digits: vec![14, 9, 1, 0, 0, 0, 1],
-//        };
-//        let f = Int {
-//            is_negative: false,
-//            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
-//        };
-//        assert_eq!(&d * e, f);
-//        assert_eq!(d * Int::from(0), Int::from(0));
-//    }
+    //    #[test]
+    //    fn mul_large_test() {
+    //        let a = Int {
+    //            is_negative: false,
+    //            digits: vec![4294967295u32],
+    //        };
+    //        let b = Int {
+    //            is_negative: false,
+    //            digits: vec![0, 1],
+    //        };
+    //        let c = Int {
+    //            is_negative: false,
+    //            digits: vec![0, 4294967295u32],
+    //        };
+    //        assert_eq!(a * b, c);
+    //
+    //        let d = Int {
+    //            is_negative: false,
+    //            digits: vec![9, 9, 1, 0, 0, 0, 1],
+    //        };
+    //        let e = Int {
+    //            is_negative: false,
+    //            digits: vec![14, 9, 1, 0, 0, 0, 1],
+    //        };
+    //        let f = Int {
+    //            is_negative: false,
+    //            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
+    //        };
+    //        assert_eq!(&d * e, f);
+    //        assert_eq!(d * Int::from(0), Int::from(0));
+    //    }
 
-//    #[test]
-//    fn divide_by_2_test() {
-//        let mut a = Int {
-//            is_negative: false,
-//            digits: vec![0, 1],
-//        };
-//        let b = Int {
-//            is_negative: false,
-//            digits: vec![2147483648u32],
-//        };
-//        a.divide_by_2();
-//        assert_eq!(a, b);
-//    }
-//
-//    #[test]
-//    fn div_small_test() {
-//        let negative_two = Int::from(-2);
-//        let negative_one = Int::from(-1);
-//        let zero = Int::from(0);
-//        let one = Int::from(1);
-//        let two = Int::from(2);
-//        assert_eq!(&negative_two / &one, negative_two);
-//        assert_eq!(&zero / &negative_two, zero);
-//        assert_eq!(&negative_one / &negative_one, one);
-//        assert_eq!(&one / &one, one);
-//        assert_eq!(&two / &two, one);
-//    }
-//
-//    #[test]
-//    fn div_large_test() {
-//        let a = Int {
-//            is_negative: false,
-//            digits: vec![9, 9, 1, 0, 0, 0, 1],
-//        };
-//        let b = Int {
-//            is_negative: false,
-//            digits: vec![14, 9, 1, 0, 0, 0, 1],
-//        };
-//        let c = Int {
-//            is_negative: false,
-//            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
-//        };
-//        assert_eq!(&c / &a, b);
-//        assert_eq!((&c + Int::from(1)) / &a, b);
-//        assert_eq!((&c - Int::from(1)) / &a, &b - Int::from(1));
-//    }
+    //    #[test]
+    //    fn divide_by_2_test() {
+    //        let mut a = Int {
+    //            is_negative: false,
+    //            digits: vec![0, 1],
+    //        };
+    //        let b = Int {
+    //            is_negative: false,
+    //            digits: vec![2147483648u32],
+    //        };
+    //        a.divide_by_2();
+    //        assert_eq!(a, b);
+    //    }
+    //
+    //    #[test]
+    //    fn div_small_test() {
+    //        let negative_two = Int::from(-2);
+    //        let negative_one = Int::from(-1);
+    //        let zero = Int::from(0);
+    //        let one = Int::from(1);
+    //        let two = Int::from(2);
+    //        assert_eq!(&negative_two / &one, negative_two);
+    //        assert_eq!(&zero / &negative_two, zero);
+    //        assert_eq!(&negative_one / &negative_one, one);
+    //        assert_eq!(&one / &one, one);
+    //        assert_eq!(&two / &two, one);
+    //    }
+    //
+    //    #[test]
+    //    fn div_large_test() {
+    //        let a = Int {
+    //            is_negative: false,
+    //            digits: vec![9, 9, 1, 0, 0, 0, 1],
+    //        };
+    //        let b = Int {
+    //            is_negative: false,
+    //            digits: vec![14, 9, 1, 0, 0, 0, 1],
+    //        };
+    //        let c = Int {
+    //            is_negative: false,
+    //            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
+    //        };
+    //        assert_eq!(&c / &a, b);
+    //        assert_eq!((&c + Int::from(1)) / &a, b);
+    //        assert_eq!((&c - Int::from(1)) / &a, &b - Int::from(1));
+    //    }
 }
