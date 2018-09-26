@@ -86,11 +86,7 @@ impl UInt {
     }
 
     fn num_bits(&self) -> usize {
-        if self.is_zero() {
-            0
-        } else {
-            (self.digits.len() - 1) * 32 + num_bits(*self.digits.last().unwrap())
-        }
+        (self.digits.len() - 1) * 32 + num_bits(*self.digits.last().unwrap())
     }
 
     fn shift_digits_left(&mut self, i: u32) {
