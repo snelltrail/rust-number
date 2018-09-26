@@ -1,4 +1,4 @@
-use std::cmp::{max, Ordering};
+use std::cmp::{max, min, Ordering};
 use std::num::ParseIntError;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 use std::str::FromStr;
@@ -47,11 +47,18 @@ impl FromStr for UInt {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut res = UInt::from(0);
-        for c in s.chars() {
-            res *= 10;
-            res += c.to_digit(10).unwrap();
+        for i in (0..s.len()).step_by(9) {
+            res *= if i + 9 < s.len() {
+                1000000000u32
+            } else {
+                let mut pow_of_ten = 1u32;
+                for _ in 0..s.len() - i {
+                    pow_of_ten *= 10u32;
+                }
+                pow_of_ten
+            };
+            res += s[i..min(i + 9, s.len())].parse::<u32>().unwrap();
         }
-
         Ok(res)
     }
 }
