@@ -5,6 +5,33 @@ use std::str::FromStr;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 
+/// A UInt is an arbitrary precision unsigned integer.
+///
+/// It is represented  internally as a `Vec<u32>`. Where each element of the
+/// vector is a digit base 2^32 and the first element is the least significant
+/// digit. So `[3, 4, 5]` represents `5*(2^32)^2 + 4*2^32 + 3 =
+/// 92233720385727627267`.
+///
+/// # Example
+///
+/// ```
+/// // You can create a UInt from a u32 or a string slice.
+/// use rust_number::uint::UInt;
+/// use std::str::FromStr;
+/// let one = UInt::from(1);
+/// let x = UInt::from_str("10987654321").unwrap();
+///
+/// // You can add, subtract, multiply and divide UInts, provided the result is
+/// // nonnegative.
+/// let y = UInt::from(1) + UInt::from(2) - UInt::from(1) * UInt::from(2) / UInt::from(1);
+///
+/// // Elementary operations work with both `&Int` or and `Int`. In
+/// // the example below the multiply function takes ownership of `x`, and
+/// // takes a reference to `one`. This is more efficient than `let y = &x * &one`
+/// // as `x`'s memory can be reused for the result. The disadvantage is that `x`
+/// // can not be used after this operation.
+/// let y = x * &one;
+/// ```
 pub struct UInt {
     digits: Vec<u32>,
 }
