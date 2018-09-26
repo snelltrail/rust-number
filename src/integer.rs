@@ -307,6 +307,12 @@ impl Add<Int> for Int {
     }
 }
 
+impl<'a> SubAssign<&'a Int> for Int {
+    fn sub_assign(&mut self, other: &Int) {
+        *self = self.clone() - other;
+    }
+}
+
 ////TODO: Implement Sub using SubAssign to avoid unnecessary copies
 impl<'a, 'b> Sub<&'b Int> for &'a Int {
     type Output = Int;
@@ -337,12 +343,6 @@ impl Sub<Int> for Int {
 
     fn sub(self, other: Int) -> Int {
         self + (-other)
-    }
-}
-
-impl<'a> SubAssign<&'a Int> for Int {
-    fn sub_assign(&mut self, other: &Int) {
-        *self = self.clone() - other;
     }
 }
 
@@ -417,6 +417,24 @@ impl Mul<Int> for Int {
     }
 }
 
+impl<'a> DivAssign<&'a Int> for Int {
+    fn div_assign(&mut self, other: &Int) {
+        assert!(*other != Int::from_str("0").unwrap());
+        if self.sign == Sign::Zero {
+            *self = Int::from(0);
+        } else {
+            self.magnitude /= &other.magnitude;
+            if self.sign == other.sign && self.sign == Sign::Negative {
+                self.sign = Sign::Positive;
+            } else if self.sign != other.sign {
+                if self.sign != Sign::Negative {
+                    self.sign = Sign::Negative;
+                }
+            }
+        }
+    }
+}
+
 //impl<'a> DivAssign<&'a Int> for Int {
 //    fn div_assign(&mut self, other: &Int) {
 //        let self_is_negative = self.is_negative;
@@ -432,43 +450,43 @@ impl Mul<Int> for Int {
 //    }
 //}
 //
-//impl<'a, 'b> Div<&'b Int> for &'a Int {
-//    type Output = Int;
-//
-//    fn div(self, other: &Int) -> Int {
-//        let mut self_clone = self.clone();
-//        self_clone /= other;
-//        self_clone
-//    }
-//}
-//
-//impl<'a> Div<Int> for &'a Int {
-//    type Output = Int;
-//
-//    fn div(self, mut other: Int) -> Int {
-//        other /= self;
-//        other
-//    }
-//}
-//
-//impl<'a> Div<&'a Int> for Int {
-//    type Output = Int;
-//
-//    fn div(mut self, other: &Int) -> Int {
-//        self /= other;
-//        self
-//    }
-//}
-//
-//impl Div<Int> for Int {
-//    type Output = Int;
-//
-//    fn div(mut self, other: Int) -> Int {
-//        self /= &other;
-//        self
-//    }
-//}
-//
+impl<'a, 'b> Div<&'b Int> for &'a Int {
+    type Output = Int;
+
+    fn div(self, other: &Int) -> Int {
+        let mut self_clone = self.clone();
+        self_clone /= other;
+        self_clone
+    }
+}
+
+impl<'a> Div<Int> for &'a Int {
+    type Output = Int;
+
+    fn div(self, mut other: Int) -> Int {
+        other /= self;
+        other
+    }
+}
+
+impl<'a> Div<&'a Int> for Int {
+    type Output = Int;
+
+    fn div(mut self, other: &Int) -> Int {
+        self /= other;
+        self
+    }
+}
+
+impl Div<Int> for Int {
+    type Output = Int;
+
+    fn div(mut self, other: Int) -> Int {
+        self /= &other;
+        self
+    }
+}
+
 //impl PartialOrd for Int {
 //    fn partial_cmp(&self, other: &Int) -> Option<Ordering> {
 //        Some(self.cmp(other))
@@ -837,40 +855,39 @@ mod tests {
         assert_eq!(&zero * &zero, zero);
         assert_eq!(&negative_one * &negative_one, one);
         assert_eq!(&one * &one, one);
-        //assert_eq!(&one * &two, two);
+        assert_eq!(&one * &two, two);
     }
 
-    //    #[test]
-    //    fn mul_large_test() {
-    //        let a = Int {
-    //            is_negative: false,
-    //            digits: vec![4294967295u32],
-    //        };
-    //        let b = Int {
-    //            is_negative: false,
-    //            digits: vec![0, 1],
-    //        };
-    //        let c = Int {
-    //            is_negative: false,
-    //            digits: vec![0, 4294967295u32],
-    //        };
-    //        assert_eq!(a * b, c);
-    //
-    //        let d = Int {
-    //            is_negative: false,
-    //            digits: vec![9, 9, 1, 0, 0, 0, 1],
-    //        };
-    //        let e = Int {
-    //            is_negative: false,
-    //            digits: vec![14, 9, 1, 0, 0, 0, 1],
-    //        };
-    //        let f = Int {
-    //            is_negative: false,
-    //            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
-    //        };
-    //        assert_eq!(&d * e, f);
-    //        assert_eq!(d * Int::from(0), Int::from(0));
-    //    }
+    #[test]
+    fn mul_large_test() {
+        let a = Int::from_str("4294967295").unwrap();
+        let b = Int::from_str("4294967296").unwrap();
+        let c = Int::from_str("18446744069414584320").unwrap();
+        assert_eq!(&a * &b, c);
+
+        let d = Int::from_str("-4294967295").unwrap();
+        let e = Int::from_str("4294967296").unwrap();
+        let f = Int::from_str("-18446744069414584320").unwrap();
+        assert_eq!(&d * &e, f);
+
+        let zero = Int::from_str("0").unwrap();
+        assert_eq!(&zero * &f, zero);
+
+        //  let d = Int {
+        //            is_negative: false,
+        //            digits: vec![9, 9, 1, 0, 0, 0, 1],
+        //        };
+        //        let e = Int {
+        //            is_negative: false,
+        //            digits: vec![14, 9, 1, 0, 0, 0, 1],
+        //        };
+        //        let f = Int {
+        //            is_negative: false,
+        //            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
+        //        };
+        //        assert_eq!(&d * e, f);
+        //        assert_eq!(d * Int::from(0), Int::from(0));
+    }
 
     //    #[test]
     //    fn divide_by_2_test() {
@@ -886,36 +903,31 @@ mod tests {
     //        assert_eq!(a, b);
     //    }
     //
-    //    #[test]
-    //    fn div_small_test() {
-    //        let negative_two = Int::from(-2);
-    //        let negative_one = Int::from(-1);
-    //        let zero = Int::from(0);
-    //        let one = Int::from(1);
-    //        let two = Int::from(2);
-    //        assert_eq!(&negative_two / &one, negative_two);
-    //        assert_eq!(&zero / &negative_two, zero);
-    //        assert_eq!(&negative_one / &negative_one, one);
-    //        assert_eq!(&one / &one, one);
-    //        assert_eq!(&two / &two, one);
-    //    }
-    //
-    //    #[test]
-    //    fn div_large_test() {
-    //        let a = Int {
-    //            is_negative: false,
-    //            digits: vec![9, 9, 1, 0, 0, 0, 1],
-    //        };
-    //        let b = Int {
-    //            is_negative: false,
-    //            digits: vec![14, 9, 1, 0, 0, 0, 1],
-    //        };
-    //        let c = Int {
-    //            is_negative: false,
-    //            digits: vec![126, 207, 104, 18, 1, 0, 23, 18, 2, 0, 0, 0, 1],
-    //        };
-    //        assert_eq!(&c / &a, b);
-    //        assert_eq!((&c + Int::from(1)) / &a, b);
-    //        assert_eq!((&c - Int::from(1)) / &a, &b - Int::from(1));
-    //    }
+    #[test]
+    fn div_small_test() {
+        let negative_two = Int::from(-2);
+        let negative_one = Int::from(-1);
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let two = Int::from(2);
+        assert_eq!(&negative_two / &one, negative_two);
+        assert_eq!(&zero / &negative_two, zero);
+        assert_eq!(&negative_one / &negative_one, one);
+        assert_eq!(&one / &one, one);
+        assert_eq!(&two / &two, one);
+    }
+
+    #[test]
+    fn div_large_test() {
+        let zero = Int::from_str("0").unwrap();
+        let a =
+            Int::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b =
+            Int::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
+        let c = Int::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
+        assert_eq!(&zero / &c, zero);
+        assert_eq!(&c / &a, b);
+        assert_eq!((&c + Int::from(1)) / &a, b);
+        assert_eq!((&c - Int::from(1)) / &a, &b - Int::from(1));
+    }
 }
