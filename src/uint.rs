@@ -51,14 +51,47 @@ impl UInt {
         self.digits[curr] -= 1;
     }
 
-    fn shift_by(&mut self, i: usize) {
+    fn num_bits(&self) -> usize {
+        if *self == UInt::from(0) {
+            0
+        } else {
+            (self.digits.len() - 1) * 32 + num_bits(*self.digits.last().unwrap())
+        }
+    }
+
+    fn shift_digits_left(&mut self, i: u32) {
         if *self != UInt::from(0) {
+            self.digits.reserve(i as usize);
             for _ in 0..i {
-                // TODO: This can be implemented more efficiently by adding zeros to the
-                // end and rotating.
-                self.digits.insert(0, 0);
+                self.digits.push(0);
+            }
+            self.digits.rotate_right(i as usize);
+        }
+    }
+
+    fn shift_x_bits_left(&mut self, x: i32) {
+        if x != 0 {
+            let mut prev_msb = 0u32;
+            for i in 0..self.digits.len() {
+                let curr_msb = self.digits[i] >> (32 - x);
+                self.digits[i] <<= x;
+                self.digits[i] |= prev_msb;
+                prev_msb = curr_msb;
+            }
+            if prev_msb != 0 {
+                self.digits.push(prev_msb);
             }
         }
+    }
+
+    fn shift_bits_left(&mut self, i: u32) {
+        self.shift_digits_left(i / (32 as u32));
+        self.shift_x_bits_left((i % 32) as i32);
+    }
+
+    fn set_bit(&mut self, i: u32) {
+        let idx = (i / 32) as usize;
+        self.digits[idx] |= 1 << i % 32;
     }
 
     fn divide_by_2(&mut self) {
@@ -292,7 +325,7 @@ impl<'a> MulAssign<&'a UInt> for UInt {
         let mut res = UInt::from(0);
         for i in 0..other.digits.len() {
             let mut single_multiplication = multiply(self, other.digits[i]);
-            single_multiplication.shift_by(i);
+            single_multiplication.shift_digits_left(i as u32);
             res += &single_multiplication;
         }
         res.remove_leading_zeros();
@@ -383,23 +416,15 @@ impl<'a> DivAssign<&'a UInt> for UInt {
         if *self < *other {
             *self = UInt::from(0);
         } else {
-            let mut lo = UInt::from(0);
-            let mut hi = UInt::from(1);
-            hi.shift_by(self.digits.len() - other.digits.len() + 1);
-            let mut res = UInt::from(0);
-            while lo <= hi {
-                let mut mid = &lo + &hi;
-                mid.divide_by_2();
-                let mid_times_denom = &mid * other;
-                if mid_times_denom == *self {
-                    *self = mid;
-                    return;
-                } else if *self < mid_times_denom {
-                    hi = mid - UInt::from(1);
-                } else {
-                    lo = &mid + UInt::from(1);
-                    res = mid;
-                }
+            let mut zs = Vec::new();
+            while *self >= *other {
+                let z = divide_once(self, other);
+                zs.push(z);
+            }
+            let mut res = UInt::from(1);
+            res.shift_bits_left(*zs.first().unwrap());
+            for z in &zs[1..] {
+                res.set_bit(*z);
             }
             *self = res;
         }
@@ -630,6 +655,30 @@ fn multiply_with_carry(x: u32, y: u32, carry: u32) -> (u32, u32) {
     (prod, res_carry)
 }
 
+// Returns z where x = y*2^z + r and z is maximal and reassigns x = r.
+fn divide_once(x: &mut UInt, y: &UInt) -> u32 {
+    let shift = x.num_bits() as u32 - y.num_bits() as u32;
+    let mut y_clone = y.clone();
+    y_clone.shift_bits_left(shift);
+    if y_clone <= *x {
+        *x -= &y_clone;
+        shift
+    } else {
+        y_clone.divide_by_2();
+        *x -= &y_clone;
+        shift - 1
+    }
+}
+
+fn num_bits(x: u32) -> usize {
+    for i in 0..32 {
+        if x >> i == 0 {
+            return i;
+        }
+    }
+    return 32;
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -669,6 +718,23 @@ mod tests {
         assert!(zero.is_zero());
         assert!(!one.is_zero());
         assert!(!x.is_zero());
+    }
+
+    #[test]
+    fn shift_one_test() {
+        let mut x = UInt::from(1);
+        let one = UInt::from(1);
+        let mut y = UInt::from(1);
+        let two = UInt::from(2);
+        for i in 0..100 {
+            assert_eq!(x.num_bits(), i + 1);
+            let mut x_clone = one.clone();
+            x_clone.shift_bits_left(i as u32);
+            assert_eq!(x, x_clone);
+            x.shift_bits_left(1);
+            y *= &two;
+            assert_eq!(x, y);
+        }
     }
 
     #[test]
