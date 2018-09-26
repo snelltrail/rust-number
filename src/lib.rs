@@ -2,7 +2,7 @@
 
 extern crate test;
 
-pub mod integer;
+pub mod int;
 pub mod uint;
 
 use std::str::FromStr;

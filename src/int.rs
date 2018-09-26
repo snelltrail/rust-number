@@ -338,7 +338,7 @@ impl Div<Int> for Int {
 /// ```
 /// let negative_five = -5;
 ///
-/// assert_eq!(5, rust_number::integer::abs(negative_five));
+/// assert_eq!(5, rust_number::int::abs(negative_five));
 /// ```
 pub fn abs(x: i32) -> u32 {
     if x < 0 {
