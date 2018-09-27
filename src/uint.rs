@@ -1,4 +1,4 @@
-use std::cmp::{max, Ordering};
+use std::cmp::{max, min, Ordering};
 use std::num::ParseIntError;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 use std::str::FromStr;
@@ -47,11 +47,18 @@ impl FromStr for UInt {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut res = UInt::from(0);
-        for c in s.chars() {
-            res *= 10;
-            res += c.to_digit(10).unwrap();
+        for i in (0..s.len()).step_by(9) {
+            res *= if i + 9 < s.len() {
+                1000000000u32
+            } else {
+                let mut pow_of_ten = 1u32;
+                for _ in 0..s.len() - i {
+                    pow_of_ten *= 10u32;
+                }
+                pow_of_ten
+            };
+            res += s[i..min(i + 9, s.len())].parse::<u32>().unwrap();
         }
-
         Ok(res)
     }
 }
@@ -79,11 +86,7 @@ impl UInt {
     }
 
     fn num_bits(&self) -> usize {
-        if *self == UInt::from(0) {
-            0
-        } else {
-            (self.digits.len() - 1) * 32 + num_bits(*self.digits.last().unwrap())
-        }
+        (self.digits.len() - 1) * 32 + num_bits(*self.digits.last().unwrap())
     }
 
     fn shift_digits_left(&mut self, i: u32) {
@@ -112,13 +115,13 @@ impl UInt {
     }
 
     fn shift_bits_left(&mut self, i: u32) {
-        self.shift_digits_left(i / (32 as u32));
-        self.shift_x_bits_left((i % 32) as i32);
+        self.shift_digits_left(i >> 5);
+        self.shift_x_bits_left((i & 0x1F) as i32);
     }
 
     fn set_bit(&mut self, i: u32) {
-        let idx = (i / 32) as usize;
-        self.digits[idx] |= 1 << i % 32;
+        let idx = (i >> 5) as usize;
+        self.digits[idx] |= 1 << (i & 0x1F);
     }
 
     fn divide_by_2(&mut self) {
@@ -139,17 +142,25 @@ impl UInt {
     pub fn is_zero(&self) -> bool {
         self.digits.len() == 1 && self.digits[0] == 0
     }
+
+    pub fn set_zero(&mut self) {
+        self.digits.clear();
+        self.digits.push(0);
+    }
 }
 
 impl<'a> AddAssign<&'a UInt> for UInt {
     fn add_assign(&mut self, other: &UInt) {
         let mut carry: u32 = 0;
         let mut i = 0;
+        if self.digits.len() < other.digits.len() {
+            let len_diff = other.digits.len() - self.digits.len();
+            self.digits.reserve(len_diff);
+        }
         while i < max(self.digits.len(), other.digits.len()) || carry != 0 {
             // Make sure that self.digits is big enough to store the next digit
             if i >= self.digits.len() {
                 self.digits.push(0);
-                assert_eq!(i, self.digits.len() - 1);
             }
 
             let (next_digit, next_carry) = add_with_carry(
@@ -350,6 +361,7 @@ impl<'a> Sub<&'a UInt> for u32 {
 impl<'a> MulAssign<&'a UInt> for UInt {
     fn mul_assign(&mut self, other: &UInt) {
         let mut res = UInt::from(0);
+        res.digits.reserve(self.digits.len() + other.digits.len());
         for i in 0..other.digits.len() {
             let mut single_multiplication = multiply(self, other.digits[i]);
             single_multiplication.shift_digits_left(i as u32);
@@ -439,19 +451,19 @@ impl<'a> Mul<&'a UInt> for u32 {
 
 impl<'a> DivAssign<&'a UInt> for UInt {
     fn div_assign(&mut self, other: &UInt) {
-        assert!(*other != UInt::from(0));
+        assert!(!other.is_zero());
         if *self < *other {
-            *self = UInt::from(0);
+            self.set_zero();
         } else {
-            let mut zs = Vec::new();
+            let mut set_bits = Vec::new();
             while *self >= *other {
-                let z = divide_once(self, other);
-                zs.push(z);
+                let i = divide_once(self, other);
+                set_bits.push(i);
             }
             let mut res = UInt::from(1);
-            res.shift_bits_left(*zs.first().unwrap());
-            for z in &zs[1..] {
-                res.set_bit(*z);
+            res.shift_bits_left(*set_bits.first().unwrap());
+            for i in &set_bits[1..] {
+                res.set_bit(*i);
             }
             *self = res;
         }
@@ -537,7 +549,6 @@ impl<'a> Div<&'a UInt> for u32 {
 
 impl<'a> RemAssign<&'a UInt> for UInt {
     fn rem_assign(&mut self, other: &UInt) {
-        assert!(*other != UInt::from(0));
         let self_clone = self.clone();
         *self = &self_clone - other * (&self_clone / other)
     }
@@ -647,6 +658,7 @@ impl Ord for UInt {
 
 fn multiply(lhs: &UInt, rhs: u32) -> UInt {
     let mut res = UInt { digits: vec![] };
+    res.digits.reserve(lhs.digits.len() + 1);
     let mut carry = 0u32;
     for i in 0..lhs.digits.len() {
         let (next_digit, next_carry) = multiply_with_carry(lhs.digits[i], rhs, carry);
@@ -725,7 +737,12 @@ mod tests {
         let hundred = UInt::from_str("100").unwrap();
         assert_eq!(two, UInt::from(2));
         assert_eq!(hundred, UInt::from(100));
-        let a = UInt::from_str("10715086071862673209484250490600018105614048117055336074437503883703510511249361224931983788156958581275946729175531468251871452856923140435984577574698574803934567774824230985421074605062371141877954182153046474983581941267398767559165543946077062914571196477686542167660429831652624386837205668069673").unwrap();
+        let a = UInt::from_str(
+            "1071508607186267320948425049060001810561404811705533607443750388370351051124936122493\
+             1983788156958581275946729175531468251871452856923140435984577574698574803934567774824\
+             2309854210746050623711418779541821530464749835819412673987675591655439460770629145711\
+             96477686542167660429831652624386837205668069673",
+        ).unwrap();
         assert_eq!(
             a,
             UInt {
@@ -872,7 +889,10 @@ mod tests {
             UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
         let e =
             UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
-        let f = UInt::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
+        let f = UInt::from_str(
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150",
+        ).unwrap();
         assert_eq!(&d * e, f);
         assert_eq!(d * UInt::from(0), UInt::from(0));
     }
@@ -910,7 +930,10 @@ mod tests {
             UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
         let b =
             UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
-        let c = UInt::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
+        let c = UInt::from_str(
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150",
+        ).unwrap();
         assert_eq!(&c / &a, b);
         assert_eq!((&c + UInt::from(1)) / &a, b);
         assert_eq!((&c - UInt::from(1)) / &a, &b - UInt::from(1));
@@ -929,12 +952,13 @@ mod tests {
     fn rem_large_test() {
         let a =
             UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
-        let b =
-            UInt::from_str("6277101735386680763835789423207666416120802188576398770190").unwrap();
-        let c = UInt::from_str("39402006196394479212279040100143613805311323449425358098948520230480997516338667371973139355530553882773662438785150").unwrap();
-        assert_eq!(&c % &a, UInt::from(0));
-        assert_eq!((&c + UInt::from(1)) % &a, UInt::from(1));
-        assert_eq!((&c - UInt::from(1)) % &a, &a - UInt::from(1));
+        let b = UInt::from_str(
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150",
+        ).unwrap();
+        assert_eq!(&b % &a, UInt::from(0));
+        assert_eq!((&b + UInt::from(1)) % &a, UInt::from(1));
+        assert_eq!((&b - UInt::from(1)) % &a, &a - UInt::from(1));
     }
 
     #[test]
