@@ -63,6 +63,24 @@ impl FromStr for UInt {
     }
 }
 
+impl PartialEq<u32> for UInt {
+    fn eq(&self, other: &u32) -> bool {
+        if self.digits.len() > 1 {
+            // self is much bigger than a u32
+            false
+        } else {
+            assert!(self.digits.len() == 1);
+            self.digits[0] == *other
+        }
+    }
+}
+
+impl PartialEq<UInt> for u32 {
+    fn eq(&self, other: &UInt) -> bool {
+        other == self
+    }
+}
+
 impl UInt {
     pub fn new(digits: Vec<u32>) -> UInt {
         UInt { digits }
@@ -72,6 +90,10 @@ impl UInt {
         while self.digits.len() > 1 && *self.digits.last().unwrap() == 0u32 {
             self.digits.pop();
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.digits.len()
     }
 
     fn borrow_from_neighbour(&mut self, neighbour: usize) {
@@ -968,5 +990,22 @@ mod tests {
         a %= 1;
         a = &a / 1;
         assert_eq!(a, UInt::from(0));
+    }
+
+    #[test]
+    fn eq_test() {
+        let zero = UInt::from(0);
+        let one = UInt::from(1);
+        let a =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b = UInt::from_str(
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150",
+         ).unwrap();
+        assert_eq!(zero, 0);
+        assert_eq!(one, 1);
+        assert_ne!(zero, 1);
+        assert_ne!(a, 1);
+        assert_ne!(1, b);
     }
 }
