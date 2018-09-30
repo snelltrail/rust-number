@@ -299,38 +299,49 @@ impl Div<Int> for Int {
     }
 }
 
-//impl PartialOrd for Int {
-//    fn partial_cmp(&self, other: &Int) -> Option<Ordering> {
-//        Some(self.cmp(other))
-//    }
-//}
-//
-//impl Ord for Int {
-//    fn cmp(&self, rhs: &Int) -> Ordering {
-//        if self.is_negative && !rhs.is_negative {
-//            Ordering::Less
-//        } else if !self.is_negative && rhs.is_negative {
-//            Ordering::Greater
-//        } else {
-//            // Both numbers have the same sign.
-//            let both_negative = self.is_negative;
-//            match compare_in_magnitude(self, rhs) {
-//                Ordering::Less => if both_negative {
-//                    Ordering::Greater
-//                } else {
-//                    Ordering::Less
-//                },
-//                Ordering::Greater => if both_negative {
-//                    Ordering::Less
-//                } else {
-//                    Ordering::Greater
-//                },
-//                Ordering::Equal => Ordering::Equal,
-//            }
-//        }
-//    }
-//}
-//
+impl Ord for Int {
+    fn cmp(&self, rhs: &Int) -> Ordering {
+        if self.sign == Sign::Positive {
+            if rhs.sign == Sign::Negative || rhs.sign == Sign::Zero {
+                Ordering::Greater
+            } else {
+                assert!(rhs.sign == Sign::Positive);
+                self.magnitude.cmp(&rhs.magnitude)
+            }
+        } else if self.sign == Sign::Negative {
+            if rhs.sign == Sign::Positive || rhs.sign == Sign::Zero {
+                Ordering::Less
+            } else {
+                assert!(rhs.sign == Sign::Negative);
+                if self.magnitude == rhs.magnitude {
+                    Ordering::Equal
+                } else if self.magnitude < rhs.magnitude {
+                    Ordering::Greater
+                } else {
+                    assert!(self.magnitude > rhs.magnitude);
+                    Ordering::Less
+                }
+            }
+        } else {
+            assert!(self.sign == Sign::Zero);
+            if rhs.sign == Sign::Zero {
+                Ordering::Equal
+            } else if rhs.sign == Sign::Positive {
+                Ordering::Less
+            } else {
+                assert!(rhs.sign == Sign::Negative);
+                Ordering::Greater
+            }
+        }
+    }
+}
+
+impl PartialOrd for Int {
+    fn partial_cmp(&self, other: &Int) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 /// Returns the absolute value of the given number.
 ///
 /// # Examples
@@ -511,5 +522,32 @@ mod tests {
         assert_eq!(&c / &a, b);
         assert_eq!((&c + Int::from(1)) / &a, b);
         assert_eq!((&c - Int::from(1)) / &a, &b - Int::from(1));
+    }
+
+    #[test]
+    fn ord_test() {
+        let one = Int::from(1);
+        let zero = Int::from(0);
+        let negative_one = Int::from(-1);
+        let a =
+            Int::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b =
+            Int::from_str("-6277101735386680763835789423207666416120802188576398770190").unwrap();
+
+        assert!(one > zero);
+        assert!(one > negative_one);
+        assert!(one == one);
+        assert!(zero < one);
+        assert!(zero == zero);
+        assert!(zero > negative_one);
+        assert!(negative_one < one);
+        assert!(negative_one < zero);
+        assert!(negative_one == negative_one);
+        assert!(a > b);
+        assert!(b < a);
+        assert!(a > zero);
+        assert!(b < zero);
+        assert!(zero < a);
+        assert!(zero > b);
     }
 }
