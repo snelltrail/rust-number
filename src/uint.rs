@@ -139,6 +139,14 @@ impl UInt {
         }
     }
 
+    fn is_even(&self) -> bool {
+        self.digits.first().unwrap() & 1u32 == 0u32
+    }
+
+    fn is_odd(&self) -> bool {
+        return !self.is_even();
+    }
+
     pub fn is_zero(&self) -> bool {
         self.digits.len() == 1 && self.digits[0] == 0
     }
@@ -146,6 +154,20 @@ impl UInt {
     pub fn set_zero(&mut self) {
         self.digits.clear();
         self.digits.push(0);
+    }
+
+    pub fn pow(&self, power: &UInt) -> UInt {
+        let mut y = UInt::from(1);
+        let mut n = power.clone();
+        let mut z = self.clone();
+        while !n.is_zero() {
+            if n.is_odd() {
+                y *= &z;
+            }
+            n.divide_by_2();
+            z *= &z.clone();
+        }
+        y
     }
 }
 
@@ -779,6 +801,26 @@ mod tests {
             y *= &two;
             assert_eq!(x, y);
         }
+    }
+
+    #[test]
+    fn pow_test() {
+        let zero = UInt::from(0);
+        let one = UInt::from(1);
+        let two = UInt::from(2);
+        let three = UInt::from(3);
+        assert_eq!(one.pow(&zero), one);
+        assert_eq!(one.pow(&two), one);
+        assert_eq!(zero.pow(&one), zero);
+        assert_eq!(two.pow(&two), UInt::from(4));
+        assert_eq!(three.pow(&three), UInt::from(27));
+        assert_eq!(
+            UInt::from(7).pow(&UInt::from(123)),
+            UInt::from_str(
+                "8852357036934680168443581137271812758567006111470214493356924\
+                 5260093253728999880981421881473709365496343"
+            ).unwrap()
+        );
     }
 
     #[test]
