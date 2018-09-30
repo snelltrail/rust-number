@@ -18,6 +18,20 @@ pub struct Int {
     sign: Sign,
 }
 
+impl Int {
+    fn is_zero(&self) -> bool {
+        self.sign == Sign::Zero
+    }
+
+    fn is_positive(&self) -> bool {
+        self.sign == Sign::Positive
+    }
+
+    fn is_negative(&self) -> bool {
+        self.sign == Sign::Negative
+    }
+}
+
 impl From<i32> for Int {
     fn from(num: i32) -> Self {
         Int {
@@ -341,6 +355,30 @@ impl PartialOrd for Int {
         Some(self.cmp(other))
     }
 }
+
+// impl PartialEq<i32> for Int {
+//     fn eq(&self, other: &i32) -> bool {
+//         if self.is_zero() && *other == 0 {
+//             true
+//         }
+//         else if (self.is_positive() && *other < 0) || (self.is_negative() && *other > 0) || (self.is_zero() && *other != 0) || (self.is_zero() && *other != 0) {
+//             // They have different sign
+//             false
+//         } else {
+//             // Both have the same sign
+//         }
+//     }
+// }
+//
+//impl PartialOrd<i32> for Int {
+//    fn partial_cmp(&self, other: i32) -> Option<Ordering> {
+//        if self.sign == Sign::Positive && other < 0 {
+//            Some(Ordering::Greater)
+//        } else if self.sign == Negative && other > 0 {
+//            Some(Ordering::Less)
+//        }
+//    }
+//}
 
 /// Returns the absolute value of the given number.
 ///
