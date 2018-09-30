@@ -2,6 +2,7 @@
 
 extern crate test;
 
+pub mod algorithm;
 pub mod int;
 pub mod uint;
 

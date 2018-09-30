@@ -63,6 +63,24 @@ impl FromStr for UInt {
     }
 }
 
+impl PartialEq<u32> for UInt {
+    fn eq(&self, other: &u32) -> bool {
+        if self.digits.len() > 1 {
+            // self is much bigger than a u32
+            false
+        } else {
+            assert!(self.digits.len() == 1);
+            self.digits[0] == *other
+        }
+    }
+}
+
+impl PartialEq<UInt> for u32 {
+    fn eq(&self, other: &UInt) -> bool {
+        other == self
+    }
+}
+
 impl UInt {
     pub fn new(digits: Vec<u32>) -> UInt {
         UInt { digits }
@@ -72,6 +90,10 @@ impl UInt {
         while self.digits.len() > 1 && *self.digits.last().unwrap() == 0u32 {
             self.digits.pop();
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.digits.len()
     }
 
     fn borrow_from_neighbour(&mut self, neighbour: usize) {
@@ -139,6 +161,14 @@ impl UInt {
         }
     }
 
+    fn is_even(&self) -> bool {
+        self.digits.first().unwrap() & 1u32 == 0u32
+    }
+
+    fn is_odd(&self) -> bool {
+        return !self.is_even();
+    }
+
     pub fn is_zero(&self) -> bool {
         self.digits.len() == 1 && self.digits[0] == 0
     }
@@ -146,6 +176,20 @@ impl UInt {
     pub fn set_zero(&mut self) {
         self.digits.clear();
         self.digits.push(0);
+    }
+
+    pub fn pow(&self, power: &UInt) -> UInt {
+        let mut y = UInt::from(1);
+        let mut n = power.clone();
+        let mut z = self.clone();
+        while !n.is_zero() {
+            if n.is_odd() {
+                y *= &z;
+            }
+            n.divide_by_2();
+            z *= &z.clone();
+        }
+        y
     }
 }
 
@@ -782,6 +826,26 @@ mod tests {
     }
 
     #[test]
+    fn pow_test() {
+        let zero = UInt::from(0);
+        let one = UInt::from(1);
+        let two = UInt::from(2);
+        let three = UInt::from(3);
+        assert_eq!(one.pow(&zero), one);
+        assert_eq!(one.pow(&two), one);
+        assert_eq!(zero.pow(&one), zero);
+        assert_eq!(two.pow(&two), UInt::from(4));
+        assert_eq!(three.pow(&three), UInt::from(27));
+        assert_eq!(
+            UInt::from(7).pow(&UInt::from(123)),
+            UInt::from_str(
+                "8852357036934680168443581137271812758567006111470214493356924\
+                 5260093253728999880981421881473709365496343"
+            ).unwrap()
+        );
+    }
+
+    #[test]
     fn ord_test() {
         let zero = UInt::from(0);
         let one = UInt::from(1);
@@ -968,5 +1032,22 @@ mod tests {
         a %= 1;
         a = &a / 1;
         assert_eq!(a, UInt::from(0));
+    }
+
+    #[test]
+    fn eq_test() {
+        let zero = UInt::from(0);
+        let one = UInt::from(1);
+        let a =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b = UInt::from_str(
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150",
+        ).unwrap();
+        assert_eq!(zero, 0);
+        assert_eq!(one, 1);
+        assert_ne!(zero, 1);
+        assert_ne!(a, 1);
+        assert_ne!(1, b);
     }
 }
