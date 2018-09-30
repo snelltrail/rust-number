@@ -342,32 +342,6 @@ impl PartialOrd for Int {
     }
 }
 
-//impl Ord for Int {
-//    fn cmp(&self, rhs: &Int) -> Ordering {
-//        if self.is_negative && !rhs.is_negative {
-//            Ordering::Less
-//        } else if !self.is_negative && rhs.is_negative {
-//            Ordering::Greater
-//        } else {
-//            // Both numbers have the same sign.
-//            let both_negative = self.is_negative;
-//            match compare_in_magnitude(self, rhs) {
-//                Ordering::Less => if both_negative {
-//                    Ordering::Greater
-//                } else {
-//                    Ordering::Less
-//                },
-//                Ordering::Greater => if both_negative {
-//                    Ordering::Less
-//                } else {
-//                    Ordering::Greater
-//                },
-//                Ordering::Equal => Ordering::Equal,
-//            }
-//        }
-//    }
-//}
-//
 /// Returns the absolute value of the given number.
 ///
 /// # Examples
