@@ -18,6 +18,20 @@ pub struct Int {
     sign: Sign,
 }
 
+impl Int {
+    fn is_zero(&self) -> bool {
+        self.sign == Sign::Zero
+    }
+
+    fn is_positive(&self) -> bool {
+        self.sign == Sign::Positive
+    }
+
+    fn is_negative(&self) -> bool {
+        self.sign == Sign::Negative
+    }
+}
+
 impl From<i32> for Int {
     fn from(num: i32) -> Self {
         Int {
@@ -342,6 +356,50 @@ impl PartialOrd for Int {
     }
 }
 
+impl PartialEq<i32> for Int {
+    fn eq(&self, other: &i32) -> bool {
+        match self.sign {
+            Sign::Zero => *other == 0,
+            Sign::Positive => *other > 0 && self.magnitude == abs(*other),
+            Sign::Negative => *other < 0 && self.magnitude == abs(*other),
+        }
+    }
+}
+
+impl PartialEq<Int> for i32 {
+    fn eq(&self, other: &Int) -> bool {
+        other == self
+    }
+}
+
+impl PartialOrd<i32> for Int {
+    fn partial_cmp(&self, other: &i32) -> Option<Ordering> {
+        match self.sign {
+            Sign::Zero => 0i32.partial_cmp(other),
+            Sign::Positive => {
+                if *other <= 0 {
+                    Some(Ordering::Greater)
+                } else {
+                    self.magnitude.partial_cmp(&abs(*other))
+                }
+            }
+            Sign::Negative => {
+                if *other >= 0 {
+                    Some(Ordering::Less)
+                } else {
+                    Some(self.magnitude.partial_cmp(&abs(*other)).unwrap().reverse())
+                }
+            }
+        }
+    }
+}
+
+impl PartialOrd<Int> for i32 {
+    fn partial_cmp(&self, other: &Int) -> Option<Ordering> {
+        Some(other.partial_cmp(self).unwrap().reverse())
+    }
+}
+
 /// Returns the absolute value of the given number.
 ///
 /// # Examples
@@ -549,5 +607,46 @@ mod tests {
         assert!(b < zero);
         assert!(zero < a);
         assert!(zero > b);
+    }
+
+    #[test]
+    fn partialeq_test() {
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let negative_one = Int::from(-1);
+        let c = Int::from_str("4294967296").unwrap();
+
+        assert!(zero == 0);
+        assert!(one == 1);
+        assert!(negative_one == -1);
+        assert!(&one == &Int::from(1));
+        assert!(zero != 1);
+        assert!(0 != c);
+        assert!(c != 0);
+    }
+
+    #[test]
+    fn partial_ord_i32_test() {
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let negative_one = Int::from(-1);
+        let a =
+            Int::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b =
+            Int::from_str("-6277101735386680763835789423207666416120802188576398770190").unwrap();
+
+        assert!(zero < 1);
+        assert!(zero > -1);
+        assert!(one > 0);
+        assert!(one > -1);
+        assert!(negative_one < 0);
+        assert!(negative_one < 1);
+        assert!(1 > zero);
+        assert!(a > 1);
+        assert!(1 < a);
+        assert!(b < -1);
+        assert!(-1 > b);
+        assert!(zero <= 0);
+        assert!(zero <= 1);
     }
 }
