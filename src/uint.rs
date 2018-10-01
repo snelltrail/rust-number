@@ -1,4 +1,6 @@
+use std::char;
 use std::cmp::{max, min, Ordering};
+use std::fmt;
 use std::num::ParseIntError;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 use std::str::FromStr;
@@ -60,6 +62,25 @@ impl FromStr for UInt {
             res += s[i..min(i + 9, s.len())].parse::<u32>().unwrap();
         }
         Ok(res)
+    }
+}
+
+impl fmt::Display for UInt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if *self == 0 {
+            write!(f, "0")
+        } else {
+            let mut self_clone = self.clone();
+            let mut v = Vec::new();
+            while self_clone != 0 {
+                let next_digit = (&self_clone % 10u32).digits[0];
+                v.push(char::from_digit(next_digit, 10).unwrap());
+                self_clone /= 10;
+            }
+            v.reverse();
+            let s: String = v.into_iter().collect();
+            write!(f, "{}", s)
+        }
     }
 }
 
@@ -1069,6 +1090,27 @@ mod tests {
         assert!(100 <= c);
         assert!(a >= 0);
         assert!(0 <= a);
+    }
+
+    #[test]
+    fn display_test() {
+        let a =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b = UInt::from_str(
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150",
+        ).unwrap();
+        let c = UInt::from(0);
+        assert_eq!(
+            format!("{}", a),
+            "6277101735386680763835789423207666416120802188576398770185"
+        );
+        assert_eq!(
+            format!("{}", b),
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150"
+        );
+        assert_eq!(format!("{}", c), "0");
     }
 
 }
