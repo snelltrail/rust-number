@@ -18,20 +18,6 @@ pub struct Int {
     sign: Sign,
 }
 
-impl Int {
-    fn is_zero(&self) -> bool {
-        self.sign == Sign::Zero
-    }
-
-    fn is_positive(&self) -> bool {
-        self.sign == Sign::Positive
-    }
-
-    fn is_negative(&self) -> bool {
-        self.sign == Sign::Negative
-    }
-}
-
 impl From<i32> for Int {
     fn from(num: i32) -> Self {
         Int {

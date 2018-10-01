@@ -151,10 +151,6 @@ impl UInt {
         return !self.is_even();
     }
 
-    pub fn is_zero(&self) -> bool {
-        self.digits.len() == 1 && self.digits[0] == 0
-    }
-
     pub fn set_zero(&mut self) {
         self.digits.clear();
         self.digits.push(0);
@@ -164,7 +160,7 @@ impl UInt {
         let mut y = UInt::from(1);
         let mut n = power.clone();
         let mut z = self.clone();
-        while !n.is_zero() {
+        while n != 0 {
             if n.is_odd() {
                 y *= &z;
             }
@@ -477,7 +473,7 @@ impl<'a> Mul<&'a UInt> for u32 {
 
 impl<'a> DivAssign<&'a UInt> for UInt {
     fn div_assign(&mut self, other: &UInt) {
-        assert!(!other.is_zero());
+        assert!(*other != 0);
         if *self < *other {
             self.set_zero();
         } else {
@@ -806,16 +802,6 @@ mod tests {
                 ]
             }
         );
-    }
-
-    #[test]
-    fn is_zero_test() {
-        let zero = UInt::from(0);
-        let one = UInt::from(1);
-        let x = UInt::from_str("4294967296").unwrap();
-        assert!(zero.is_zero());
-        assert!(!one.is_zero());
-        assert!(!x.is_zero());
     }
 
     #[test]
