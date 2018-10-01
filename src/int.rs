@@ -4,7 +4,7 @@ use std::num::ParseIntError;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::str::FromStr;
 
-use uint::UInt;
+use uint::{rand, UInt};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum Sign {
@@ -30,6 +30,16 @@ impl From<i32> for Int {
             } else {
                 Sign::Negative
             },
+        }
+    }
+}
+
+impl From<UInt> for Int {
+    fn from(num: UInt) -> Self {
+        let sign = if num == 0 { Sign::Zero } else { Sign::Positive };
+        Int {
+            magnitude: num,
+            sign: sign,
         }
     }
 }
@@ -416,6 +426,14 @@ pub fn abs(x: i32) -> u32 {
     } else {
         x as u32
     }
+}
+
+pub fn randrange(x: &Int, y: &Int) -> Int {
+    let diff = y - x;
+    let unsigned_diff = &UInt::from_str(&format!("{}", diff)).unwrap();
+    let random_unsigned = rand(unsigned_diff);
+    let random_signed = Int::from(random_unsigned);
+    random_signed + x
 }
 
 #[cfg(test)]
