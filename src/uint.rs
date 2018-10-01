@@ -684,13 +684,7 @@ impl Ord for UInt {
 
 impl PartialEq<u32> for UInt {
     fn eq(&self, other: &u32) -> bool {
-        if self.digits.len() > 1 {
-            // self is much bigger than a u32
-            false
-        } else {
-            assert!(self.digits.len() == 1);
-            self.digits[0] == *other
-        }
+        self.digits.len() == 1 && self.digits[0] == *other
     }
 }
 
