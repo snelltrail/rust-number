@@ -705,28 +705,14 @@ impl PartialOrd<u32> for UInt {
         if self.len() > 1 {
             Some(Ordering::Greater)
         } else {
-            if self.digits[0] > *other {
-                Some(Ordering::Greater)
-            } else if self.digits[0] < *other {
-                Some(Ordering::Less)
-            } else {
-                assert!(self.digits[0] == *other);
-                Some(Ordering::Equal)
-            }
+            self.digits[0].partial_cmp(other)
         }
     }
 }
 
 impl PartialOrd<UInt> for u32 {
     fn partial_cmp(&self, other: &UInt) -> Option<Ordering> {
-        if other > self {
-            Some(Ordering::Less)
-        } else if other < self {
-            Some(Ordering::Greater)
-        } else {
-            assert!(self == other);
-            Some(Ordering::Equal)
-        }
+        Some(other.partial_cmp(self).unwrap().reverse())
     }
 }
 
@@ -1099,6 +1085,10 @@ mod tests {
         assert!(1 < b);
         assert!(100 < c);
         assert!(c > 100);
+        assert!(c >= 100);
+        assert!(100 <= c);
+        assert!(a >= 0);
+        assert!(0 <= a);
     }
 
 }

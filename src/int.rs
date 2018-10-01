@@ -375,16 +375,7 @@ impl PartialEq<Int> for i32 {
 impl PartialOrd<i32> for Int {
     fn partial_cmp(&self, other: &i32) -> Option<Ordering> {
         match self.sign {
-            Sign::Zero => {
-                if *other == 0 {
-                    Some(Ordering::Equal)
-                } else if *other < 0 {
-                    Some(Ordering::Greater)
-                } else {
-                    assert!(*other > 0);
-                    Some(Ordering::Less)
-                }
-            }
+            Sign::Zero => 0i32.partial_cmp(other),
             Sign::Positive => {
                 if *other <= 0 {
                     Some(Ordering::Greater)
@@ -396,11 +387,7 @@ impl PartialOrd<i32> for Int {
                 if *other >= 0 {
                     Some(Ordering::Less)
                 } else {
-                    match self.magnitude.partial_cmp(&abs(*other)).unwrap() {
-                        Ordering::Equal => Some(Ordering::Equal),
-                        Ordering::Greater => Some(Ordering::Less),
-                        _ => Some(Ordering::Greater),
-                    }
+                    Some(self.magnitude.partial_cmp(&abs(*other)).unwrap().reverse())
                 }
             }
         }
@@ -409,14 +396,7 @@ impl PartialOrd<i32> for Int {
 
 impl PartialOrd<Int> for i32 {
     fn partial_cmp(&self, other: &Int) -> Option<Ordering> {
-        if other > self {
-            Some(Ordering::Less)
-        } else if other < self {
-            Some(Ordering::Greater)
-        } else {
-            assert!(self == other);
-            Some(Ordering::Equal)
-        }
+        Some(other.partial_cmp(self).unwrap().reverse())
     }
 }
 
@@ -634,10 +614,15 @@ mod tests {
         let zero = Int::from(0);
         let one = Int::from(1);
         let negative_one = Int::from(-1);
+        let c = Int::from_str("4294967296").unwrap();
 
         assert!(zero == 0);
         assert!(one == 1);
         assert!(negative_one == -1);
+        assert!(&one == &Int::from(1));
+        assert!(zero != 1);
+        assert!(0 != c);
+        assert!(c != 0);
     }
 
     #[test]
@@ -661,5 +646,7 @@ mod tests {
         assert!(1 < a);
         assert!(b < -1);
         assert!(-1 > b);
+        assert!(zero <= 0);
+        assert!(zero <= 1);
     }
 }
