@@ -4,7 +4,7 @@ use uint::UInt;
 pub fn gcd(x: &UInt, y: &UInt) -> UInt {
     let mut a = x.clone();
     let mut b = y.clone();
-    while !b.is_zero() {
+    while b != 0 {
         a %= &b;
         swap(&mut a, &mut b);
     }
