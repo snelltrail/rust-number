@@ -1,3 +1,5 @@
+use rand::random;
+use rand::{thread_rng, Rng};
 use std::char;
 use std::cmp::{max, min, Ordering};
 use std::fmt;
@@ -787,6 +789,23 @@ fn num_bits(x: u32) -> usize {
         }
     }
     return 32;
+}
+
+pub fn rand(x: &UInt) -> UInt {
+    let mut res = UInt::from(0);
+    res.digits.clear();
+    for _ in 0..x.digits.len() - 1 {
+        res.digits.push(random::<u32>())
+    }
+    let mut rng = thread_rng();
+    res.digits
+        .push(rng.gen_range(0u32, *x.digits.last().unwrap()));
+    res
+}
+
+pub fn randrange(x: &UInt, y: &UInt) -> UInt {
+    let res = rand(&(y - x));
+    res + x
 }
 
 #[cfg(test)]
