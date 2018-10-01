@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::fmt;
 use std::num::ParseIntError;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::str::FromStr;
@@ -51,6 +52,16 @@ impl FromStr for Int {
                 _ => Sign::Positive,
             },
         })
+    }
+}
+
+impl fmt::Display for Int {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.sign {
+            Sign::Zero => write!(f, "0"),
+            Sign::Positive => write!(f, "{}", self.magnitude),
+            Sign::Negative => write!(f, "-{}", self.magnitude),
+        }
     }
 }
 
@@ -634,5 +645,25 @@ mod tests {
         assert!(-1 > b);
         assert!(zero <= 0);
         assert!(zero <= 1);
+    }
+
+    fn display_test() {
+        let a =
+            Int::from_str("-6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b = Int::from_str(
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150",
+        ).unwrap();
+        let zero = Int::from(0);
+        assert_eq!(
+            format!("{}", a),
+            "-6277101735386680763835789423207666416120802188576398770185"
+        );
+        assert_eq!(
+            format!("{}", b),
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150"
+        );
+        assert_eq!(format!("{}", zero), "0");
     }
 }
