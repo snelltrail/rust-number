@@ -356,29 +356,69 @@ impl PartialOrd for Int {
     }
 }
 
-// impl PartialEq<i32> for Int {
-//     fn eq(&self, other: &i32) -> bool {
-//         if self.is_zero() && *other == 0 {
-//             true
-//         }
-//         else if (self.is_positive() && *other < 0) || (self.is_negative() && *other > 0) || (self.is_zero() && *other != 0) || (self.is_zero() && *other != 0) {
-//             // They have different sign
-//             false
-//         } else {
-//             // Both have the same sign
-//         }
-//     }
-// }
-//
-//impl PartialOrd<i32> for Int {
-//    fn partial_cmp(&self, other: i32) -> Option<Ordering> {
-//        if self.sign == Sign::Positive && other < 0 {
-//            Some(Ordering::Greater)
-//        } else if self.sign == Negative && other > 0 {
-//            Some(Ordering::Less)
-//        }
-//    }
-//}
+impl PartialEq<i32> for Int {
+    fn eq(&self, other: &i32) -> bool {
+        match self.sign {
+            Sign::Zero => *other == 0,
+            Sign::Positive => *other > 0 && self.magnitude == abs(*other),
+            Sign::Negative => *other < 0 && self.magnitude == abs(*other),
+        }
+    }
+}
+
+impl PartialEq<Int> for i32 {
+    fn eq(&self, other: &Int) -> bool {
+        other == self
+    }
+}
+
+impl PartialOrd<i32> for Int {
+    fn partial_cmp(&self, other: &i32) -> Option<Ordering> {
+        match self.sign {
+            Sign::Zero => {
+                if *other == 0 {
+                    Some(Ordering::Equal)
+                } else if *other < 0 {
+                    Some(Ordering::Greater)
+                } else {
+                    assert!(*other > 0);
+                    Some(Ordering::Less)
+                }
+            }
+            Sign::Positive => {
+                if *other <= 0 {
+                    Some(Ordering::Greater)
+                } else {
+                    self.magnitude.partial_cmp(&abs(*other))
+                }
+            }
+            Sign::Negative => {
+                if *other >= 0 {
+                    Some(Ordering::Less)
+                } else {
+                    match self.magnitude.partial_cmp(&abs(*other)).unwrap() {
+                        Ordering::Equal => Some(Ordering::Equal),
+                        Ordering::Greater => Some(Ordering::Less),
+                        _ => Some(Ordering::Greater),
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl PartialOrd<Int> for i32 {
+    fn partial_cmp(&self, other: &Int) -> Option<Ordering> {
+        if other > self {
+            Some(Ordering::Less)
+        } else if other < self {
+            Some(Ordering::Greater)
+        } else {
+            assert!(self == other);
+            Some(Ordering::Equal)
+        }
+    }
+}
 
 /// Returns the absolute value of the given number.
 ///
@@ -587,5 +627,39 @@ mod tests {
         assert!(b < zero);
         assert!(zero < a);
         assert!(zero > b);
+    }
+
+    #[test]
+    fn partialeq_test() {
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let negative_one = Int::from(-1);
+
+        assert!(zero == 0);
+        assert!(one == 1);
+        assert!(negative_one == -1);
+    }
+
+    #[test]
+    fn partial_ord_i32_test() {
+        let zero = Int::from(0);
+        let one = Int::from(1);
+        let negative_one = Int::from(-1);
+        let a =
+            Int::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b =
+            Int::from_str("-6277101735386680763835789423207666416120802188576398770190").unwrap();
+
+        assert!(zero < 1);
+        assert!(zero > -1);
+        assert!(one > 0);
+        assert!(one > -1);
+        assert!(negative_one < 0);
+        assert!(negative_one < 1);
+        assert!(1 > zero);
+        assert!(a > 1);
+        assert!(1 < a);
+        assert!(b < -1);
+        assert!(-1 > b);
     }
 }

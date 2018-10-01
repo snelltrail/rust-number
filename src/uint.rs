@@ -63,24 +63,6 @@ impl FromStr for UInt {
     }
 }
 
-impl PartialEq<u32> for UInt {
-    fn eq(&self, other: &u32) -> bool {
-        if self.digits.len() > 1 {
-            // self is much bigger than a u32
-            false
-        } else {
-            assert!(self.digits.len() == 1);
-            self.digits[0] == *other
-        }
-    }
-}
-
-impl PartialEq<UInt> for u32 {
-    fn eq(&self, other: &UInt) -> bool {
-        other == self
-    }
-}
-
 impl UInt {
     pub fn new(digits: Vec<u32>) -> UInt {
         UInt { digits }
@@ -700,6 +682,54 @@ impl Ord for UInt {
     }
 }
 
+impl PartialEq<u32> for UInt {
+    fn eq(&self, other: &u32) -> bool {
+        if self.digits.len() > 1 {
+            // self is much bigger than a u32
+            false
+        } else {
+            assert!(self.digits.len() == 1);
+            self.digits[0] == *other
+        }
+    }
+}
+
+impl PartialEq<UInt> for u32 {
+    fn eq(&self, other: &UInt) -> bool {
+        other == self
+    }
+}
+
+impl PartialOrd<u32> for UInt {
+    fn partial_cmp(&self, other: &u32) -> Option<Ordering> {
+        if self.len() > 1 {
+            Some(Ordering::Greater)
+        } else {
+            if self.digits[0] > *other {
+                Some(Ordering::Greater)
+            } else if self.digits[0] < *other {
+                Some(Ordering::Less)
+            } else {
+                assert!(self.digits[0] == *other);
+                Some(Ordering::Equal)
+            }
+        }
+    }
+}
+
+impl PartialOrd<UInt> for u32 {
+    fn partial_cmp(&self, other: &UInt) -> Option<Ordering> {
+        if other > self {
+            Some(Ordering::Less)
+        } else if other < self {
+            Some(Ordering::Greater)
+        } else {
+            assert!(self == other);
+            Some(Ordering::Equal)
+        }
+    }
+}
+
 fn multiply(lhs: &UInt, rhs: u32) -> UInt {
     let mut res = UInt { digits: vec![] };
     res.digits.reserve(lhs.digits.len() + 1);
@@ -1050,4 +1080,25 @@ mod tests {
         assert_ne!(a, 1);
         assert_ne!(1, b);
     }
+
+    #[test]
+    fn cmp_with_u32_test() {
+        let zero = UInt::from(0);
+        let one = UInt::from(1);
+        let a =
+            UInt::from_str("6277101735386680763835789423207666416120802188576398770185").unwrap();
+        let b = UInt::from_str(
+            "3940200619639447921227904010014361380531132344942535809894852023048099751633866737197\
+             3139355530553882773662438785150",
+        ).unwrap();
+        let c = UInt::from_str("4294967296").unwrap();
+        assert!(zero < 1);
+        assert!(zero == 0);
+        assert!(one == 1);
+        assert!(1 > zero);
+        assert!(1 < b);
+        assert!(100 < c);
+        assert!(c > 100);
+    }
+
 }
